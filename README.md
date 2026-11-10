@@ -69,6 +69,8 @@ Tous ces seuils sont réglables dans `config.yaml`.
 - La page est **publique** : quiconque a le lien la voit. Elle n'est pas indexée par Google (balise `noindex`). Ne rien mettre dans les notes du roster qu'on ne voudrait pas voir lu par les joueurs.
 - Envoyés sur GitHub : le code, la config, `roster.csv`, les exports de `data/raw/` (indispensables pour reconstruire l'historique) et `docs/`. Le fichier legacy et `output/` restent en local (voir `.gitignore`).
 
+**Tutoriel vidéo : https://artozz514.github.io/ToW-Activity---4113/tutorial/** (bouton « ▶ Tutorial » en haut du dashboard). La vidéo et sa page sont dans `docs/tutorial/` et ne sont pas touchées par le traitement hebdo. Pour la remplacer, il suffit d'écraser `docs/tutorial/tutorial.mp4` (H.264, moins de 100 Mo, la limite de GitHub), puis de publier.
+
 **Passation à un successeur :** l'ajouter comme collaborateur du dépôt (Settings → Collaborators). Il clone le dépôt avec `git clone`, installe les dépendances, et lance `lancer_semaine.bat` chaque dimanche. Au premier envoi, une fenêtre GitHub lui demande de se connecter. Pour garder le même lien, on peut aussi transférer le dépôt (Settings → Transfer), mais l'adresse change alors de compte.
 
 ## Installation (une seule fois)
