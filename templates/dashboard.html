@@ -79,7 +79,9 @@ td.miss::before{content:"✕ ";font-size:10px}
 .name{font-weight:550}
 .tag{display:inline-block;font-size:11px;color:var(--ink-2);border:1px solid var(--border);border-radius:5px;padding:0 5px;margin-left:5px}
 .reasons{color:var(--ink-2);font-size:12px}
-.flags{display:grid;gap:0;max-height:460px;overflow-y:auto;padding-right:6px}
+/* the flag list fills its card: on wide screens the card is as tall as its neighbour */
+.flagcard{display:flex;flex-direction:column}
+.flags{display:block;flex:1 1 0;min-height:420px;overflow-y:auto;padding-right:6px}
 .flagcount{font-size:12px;color:var(--ink-2);margin:-4px 0 8px}
 .flag{display:grid;grid-template-columns:minmax(120px,190px) 1fr auto;gap:10px;align-items:start;padding:9px 0;border-bottom:1px solid var(--grid)}
 .flag:last-child{border-bottom:0}
@@ -139,7 +141,7 @@ details summary{cursor:pointer;color:var(--ink-2)}
   </section>
 
   <div class="grid2">
-    <section class="card">
+    <section class="card flagcard">
       <h2>Flagged members</h2>
       <p class="hint">Alerts first, then Watch. Exempt ranks and members who joined during the week are not listed.</p>
       <div class="flagcount" id="flagcount"></div>
