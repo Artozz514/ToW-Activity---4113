@@ -42,15 +42,18 @@ def read_export(path: Path) -> pd.DataFrame:
 
 
 def required_columns(cfg: dict) -> dict[str, str]:
-    """{clé interne: nom de colonne dans l'export}"""
-    cols = {
-        "governor_id": cfg["colonnes"]["id"],
-        "pseudo": cfg["colonnes"]["pseudo"],
-        "derniere_connexion": cfg["colonnes"]["derniere_connexion"],
-    }
-    for section in ("kpis", "contexte"):
-        for key, spec in cfg.get(section, {}).items():
-            cols[key] = spec["colonne"]
+    """Colonnes obligatoires {clé interne: nom dans l'export} : ID, pseudo et KPI évalués."""
+    cols = {"governor_id": cfg["colonnes"]["id"], "pseudo": cfg["colonnes"]["pseudo"]}
+    for key, spec in cfg.get("kpis", {}).items():
+        cols[key] = spec["colonne"]
+    return cols
+
+
+def optional_columns(cfg: dict) -> dict[str, str]:
+    """Colonnes facultatives : absentes des semaines importées du legacy (laissées vides)."""
+    cols = {"derniere_connexion": cfg["colonnes"]["derniere_connexion"], "rang_export": "Rank"}
+    for key, spec in cfg.get("contexte", {}).items():
+        cols[key] = spec["colonne"]
     return cols
 
 
@@ -59,7 +62,7 @@ def load_exports(cfg: dict, root: Path) -> tuple[pd.DataFrame, list[str]]:
     raw_dir = root / cfg["dossiers"]["exports"]
     log: list[str] = []
     files = sorted(
-        p for p in raw_dir.glob("*")
+        p for p in raw_dir.rglob("*")  # inclut data/raw/legacy/
         if p.suffix.lower() in (".csv", ".xlsx") and not p.name.startswith("~$")
     )
     if not files:
@@ -78,6 +81,7 @@ def load_exports(cfg: dict, root: Path) -> tuple[pd.DataFrame, list[str]]:
             log.append(f"Week ending {wk}: {p.name} skipped (older duplicate).")
 
     cols = required_columns(cfg)
+    opt = optional_columns(cfg)
     frames = []
     for wk, (ts, p) in sorted(per_week.items()):
         df = read_export(p)
@@ -87,15 +91,24 @@ def load_exports(cfg: dict, root: Path) -> tuple[pd.DataFrame, list[str]]:
                 f"{p.name} : colonnes introuvables {missing}.\n"
                 f"Le format de l'export a peut-être changé : mettez à jour 'colonne:' dans config.yaml."
             )
-        df = df[list(cols.values())].rename(columns={v: k for k, v in cols.items()})
+        for c in opt.values():
+            if c not in df.columns:
+                df[c] = pd.NA
+        allc = {**cols, **opt}
+        df = df[list(allc.values())].rename(columns={v: k for k, v in allc.items()})
         df["governor_id"] = pd.to_numeric(df["governor_id"], errors="coerce").astype("Int64")
         n0 = len(df)
         df = df.dropna(subset=["governor_id"]).drop_duplicates("governor_id", keep="first")
         if len(df) != n0:
             log.append(f"{p.name}: {n0 - len(df)} row(s) without ID or duplicated removed.")
         df["derniere_connexion"] = pd.to_datetime(df["derniere_connexion"], utc=True, errors="coerce")
+        for k in opt:
+            if k not in ("derniere_connexion", "rang_export"):
+                df[k] = pd.to_numeric(df[k], errors="coerce").astype(float)
+        df["rang_export"] = df["rang_export"].astype("string")
         df["semaine"] = pd.Timestamp(wk)
         df["fichier"] = p.name
+        df["source"] = "legacy" if p.parent.name == "legacy" else "export"
         df["horodatage_export"] = ts
         frames.append(df)
         log.append(f"Week ending {wk:%Y-%m-%d}: {p.name} ({len(df)} members, snapshot {ts:%a %Y-%m-%d %H:%M}).")

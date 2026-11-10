@@ -78,7 +78,17 @@ run_weekly.py          point d'entrée
 docs/index.html        dashboard publié (GitHub Pages)
 output/                fichiers générés
 AUDIT_LEGACY.md        audit de l'ancien fichier Google Sheets
+outils/import_legacy.py  import ponctuel des semaines du fichier legacy
 ```
+
+## Historique importé du fichier legacy
+
+Les semaines du 27/07 au 30/08/2026 viennent de l'ancien Google Sheet. Elles ont été converties une fois pour toutes par `outils/import_legacy.py` dans `data/raw/legacy/`. Le pipeline les lit comme n'importe quelle semaine.
+
+- **Rapprochement par Governor ID** : le n° de ligne `#` du legacy est traduit en Governor ID grâce au memberlist ; à défaut, on utilise le pseudo exact. Les joueurs sans Governor ID connu (7 à 31 selon la semaine) reçoivent un ID technique négatif : ils comptent dans les totaux d'alliance mais ne sont pas reliés aux exports actuels.
+- **Données disponibles** : tech, aides, forts, construction et puissance. Pas de date de connexion, donc pas de contrôle d'inactivité ces semaines-là.
+- **L'onglet 31/08-06/09 était vide** : il n'est pas importé.
+- **Trous dans l'historique** : entre deux semaines non consécutives (ici, du 30/08 au 15/11), les graphiques montrent une zone « no data ». Les séries de semaines sous l'objectif repartent de zéro, il n'y a pas d'évolution de puissance, et personne n'a le statut New. Les départs et arrivées sont comparés à la dernière semaine suivie, dont la date est indiquée.
 
 ## Points ouverts
 

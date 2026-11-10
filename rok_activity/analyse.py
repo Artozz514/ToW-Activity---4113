@@ -29,7 +29,10 @@ def sync_roster(df: pd.DataFrame, path: Path, log: list[str]) -> pd.DataFrame:
     roster["governor_id"] = pd.to_numeric(roster["governor_id"], errors="coerce").astype("Int64")
 
     latest = df.sort_values("semaine").drop_duplicates("governor_id", keep="last")
-    new = latest[~latest["governor_id"].isin(roster["governor_id"])]
+    # seuls les membres du dernier export entrent au roster (pas les anciens du legacy,
+    # ni les ID techniques négatifs des joueurs legacy sans Governor ID)
+    current = latest[(latest["semaine"] == df["semaine"].max()) & (latest["governor_id"] > 0)]
+    new = current[~current["governor_id"].isin(roster["governor_id"])]
     if len(new):
         add = pd.DataFrame({"governor_id": new["governor_id"], "pseudo": new["pseudo"],
                             "rang": "", "exempte_jusqu_au": "", "note": "new member — rank to fill in"})
@@ -56,10 +59,11 @@ def _target(spec: dict, rang: pd.Series) -> pd.Series:
 
 
 def _weekly_value(df: pd.DataFrame, key: str, mode: str) -> pd.Series:
-    """Valeur de la semaine : brute (hebdo) ou différence avec la semaine précédente (cumul)."""
+    """Valeur de la semaine : brute (hebdo) ou différence avec la semaine précédente (cumul).
+    En mode cumul, pas de différence s'il manque la semaine juste avant (trou dans l'historique)."""
     if mode == "cumul":
-        return df.groupby("governor_id")[key].diff()
-    return df[key].astype(float)
+        return df.groupby("governor_id")[key].diff().where(df["suite"])
+    return pd.to_numeric(df[key], errors="coerce").astype(float)
 
 
 # ---------------------------------------------------------------- main
@@ -69,12 +73,22 @@ def compute(df: pd.DataFrame, roster: pd.DataFrame, cfg: dict) -> pd.DataFrame:
     df = df.sort_values(["governor_id", "semaine"]).reset_index(drop=True)
 
     df = df.merge(roster[["governor_id", "rang", "exempte_jusqu_au", "note"]], on="governor_id", how="left")
-    df["rang"] = df["rang"].fillna("").str.strip().replace("", "?")
+    # rang : roster d'abord, sinon celui noté dans le fichier (semaines legacy), sinon « ? »
+    rang_export = df["rang_export"].astype("string").fillna("") if "rang_export" in df else ""
+    df["rang"] = df["rang"].fillna("").str.strip().replace("", np.nan).fillna(rang_export).replace("", "?")
+
+    # semaine précédente du membre et de l'alliance : on ne relie deux semaines que si elles se suivent
+    une_semaine = pd.Timedelta(days=7)
+    df["suite"] = (df["semaine"] - df.groupby("governor_id")["semaine"].shift()) == une_semaine
+    weeks = sorted(df["semaine"].unique())
+    prev_alliance = {w: p for p, w in zip(weeks, weeks[1:])}
+    df["semaine_prec_alliance"] = df["semaine"].map(prev_alliance)
 
     # contexte : valeur + évolution
     for key, spec in cfg.get("contexte", {}).items():
+        df[key] = pd.to_numeric(df[key], errors="coerce")
         if spec.get("mode") == "cumul":
-            df[f"{key}_evol"] = df.groupby("governor_id")[key].diff()
+            df[f"{key}_evol"] = df.groupby("governor_id")[key].diff().where(df["suite"])
 
     # KPI évalués
     evaluated, weights = [], {}
@@ -107,21 +121,20 @@ def compute(df: pd.DataFrame, roster: pd.DataFrame, cfg: dict) -> pd.DataFrame:
     ref = df.groupby("semaine")["derniere_connexion"].transform("max")
     df["jours_sans_connexion"] = ((ref - df["derniere_connexion"]).dt.total_seconds() / 86400).round(1)
 
-    # arrivée en cours de semaine : premier export où l'ID apparaît, hors toute première
-    # semaine suivie (où tout le monde « apparaît »). Cette semaine-là ne compte pas.
-    premiere_semaine = df["semaine"].min()
+    # arrivée en cours de semaine : l'ID n'était pas là la semaine d'avant, ET la semaine
+    # d'avant est bien suivie (sinon on ne sait pas quand il est arrivé). Cette semaine ne compte pas.
     df["nouveau"] = df.groupby("governor_id").cumcount() == 0
+    alliance_suivie = (df["semaine"] - df["semaine_prec_alliance"]) == une_semaine
     df["arrive_cette_semaine"] = (
-        bool(rules.get("pas_de_flag_semaine_arrivee", True))
-        & df["nouveau"] & (df["semaine"] > premiere_semaine)
+        bool(rules.get("pas_de_flag_semaine_arrivee", True)) & alliance_suivie & ~df["suite"]
     )
 
     # semaines consécutives avec au moins un KPI raté (strikes calculés, plus de saisie manuelle)
     fail = (df["kpis_manques"] > 0) & ~df["arrive_cette_semaine"]
     streak = np.zeros(len(df), dtype=int)
     prev_id, run = None, 0
-    for i, (gid, f) in enumerate(zip(df["governor_id"], fail)):
-        run = (run + 1 if f else 0) if gid == prev_id else (1 if f else 0)
+    for i, (gid, f, suite) in enumerate(zip(df["governor_id"], fail, df["suite"])):
+        run = (run + 1 if f else 0) if (gid == prev_id and suite) else (1 if f else 0)
         streak[i], prev_id = run, gid
     df["semaines_consecutives_ko"] = streak
 
@@ -183,6 +196,7 @@ def alliance_summary(hist: pd.DataFrame, cfg: dict) -> pd.DataFrame:
     rows = []
     weeks = sorted(hist["semaine"].unique())
     prev_ids: set = set()
+    prev_wk = None
     for wk in weeks:
         w = hist[hist["semaine"] == wk]
         ids = set(w["governor_id"])
@@ -190,6 +204,10 @@ def alliance_summary(hist: pd.DataFrame, cfg: dict) -> pd.DataFrame:
         row = {"semaine": pd.Timestamp(wk), "membres": len(w),
                "export_le": export_le,
                "semaine_partielle": bool(export_le.normalize() < pd.Timestamp(wk)),
+               "source": w["source"].iloc[0] if "source" in w else "export",
+               "semaine_precedente": pd.Timestamp(prev_wk) if prev_wk is not None else pd.NaT,
+               "sans_governor_id": int((w["governor_id"] < 0).sum()),
+               # comparés par ID avec la semaine suivie précédente (qui peut être plus ancienne qu'une semaine)
                "arrivees": len(ids - prev_ids) if prev_ids else 0,
                "departs": len(prev_ids - ids) if prev_ids else 0}
         evaluables = w[~w["statut"].isin(NON_EVALUES)]
@@ -204,7 +222,7 @@ def alliance_summary(hist: pd.DataFrame, cfg: dict) -> pd.DataFrame:
         for s in (OK, SURVEILLER, ALERTE, EXEMPTE, NOUVEAU):
             row[f"n_{STATUS_KEY[s]}"] = int((w["statut"] == s).sum())
         rows.append(row)
-        prev_ids = ids
+        prev_ids, prev_wk = ids, wk
     return pd.DataFrame(rows)
 
 

@@ -13,8 +13,13 @@ TEMPLATE = Path(__file__).resolve().parent.parent / "templates" / "dashboard.htm
 
 
 def _clean(v):
-    if v is None:
+    if v is None or v is pd.NaT:
         return None
+    try:
+        if pd.isna(v):
+            return None
+    except (TypeError, ValueError):
+        pass
     if isinstance(v, float) and (math.isnan(v) or math.isinf(v)):
         return None
     if isinstance(v, (pd.Timestamp, dt.date)):

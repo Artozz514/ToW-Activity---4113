@@ -149,9 +149,9 @@ details summary{cursor:pointer;color:var(--ink-2)}
       <h2>Targets met by activity</h2>
       <p class="hint">Share of members (excluding exempt and newly arrived) at or above the weekly minimum.</p>
       <div class="bars" id="bars"></div>
-      <h2 style="margin-top:18px">Left since last week</h2>
+      <h2 style="margin-top:18px" id="departsTitle">Left since last week</h2>
       <div id="departs"></div>
-      <h2 style="margin-top:18px">Joined since last week</h2>
+      <h2 style="margin-top:18px" id="arrivalsTitle">Joined since last week</h2>
       <div id="arrivals"></div>
       <p class="hint" style="margin-top:8px">Members are matched by governor ID, so a name change is never counted as a departure + arrival.</p>
     </section>
@@ -244,25 +244,37 @@ function showTip(html, ev){
 const hideTip = () => tip.style.display = 'none';
 
 /* ---------- line chart (single series, one axis) ---------- */
+const DAY = 86400000;
+const toT = s => { const [y,m,d] = parts(s); return Date.UTC(y,m-1,d); };
+/* x positions follow real dates; the line is broken where weeks are missing (gap in tracking) */
 function lineChart(el, labels, values, {height=130, target=null, unit=''}={}){
-  const W = Math.max(el.clientWidth, 220), H = height, m = {l:44, r:10, t:10, b:22};
+  const W = Math.max(el.clientWidth, 220), H = height, m = {l:44, r:12, t:10, b:22};
   const iw = W-m.l-m.r, ih = H-m.t-m.b;
   const vals = values.filter(v => v != null);
   let max = niceMax(Math.max(...vals, target||0, 1)), min = 0;
-  const n = labels.length;
-  const x = i => m.l + (n === 1 ? iw/2 : i*iw/(n-1));
+  const n = labels.length, ts = labels.map(toT), t0 = ts[0], t1 = ts[n-1];
+  const x = i => m.l + (n === 1 || t1 === t0 ? iw/2 : (ts[i]-t0)/(t1-t0)*iw);
   const y = v => m.t + ih - (v-min)/(max-min)*ih;
+  const gapBefore = i => i > 0 && ts[i]-ts[i-1] > 8*DAY;
   let s = `<svg width="${W}" height="${H}" role="img" aria-label="${esc(el.dataset.label||'')}">`;
   [0, max/2, max].forEach(t => s += `<line x1="${m.l}" x2="${W-m.r}" y1="${y(t)}" y2="${y(t)}" stroke="var(--grid)" stroke-width="1"/>
     <text x="${m.l-6}" y="${y(t)+4}" text-anchor="end">${fmt(t)}</text>`);
   s += `<line x1="${m.l}" x2="${W-m.r}" y1="${y(0)}" y2="${y(0)}" stroke="var(--axis)"/>`;
-  const step = Math.ceil(n/6);
-  labels.forEach((l,i) => { if (i % step === 0 || i === n-1) {
+  // gap bands: weeks with no data
+  labels.forEach((l,i) => { if (gapBefore(i)) {
+    const a = x(i-1), b = x(i);
+    s += `<rect x="${a+6}" y="${m.t}" width="${Math.max(0,b-a-12)}" height="${ih}" fill="var(--surface-2)"/>
+      <text x="${(a+b)/2}" y="${m.t+ih/2+4}" text-anchor="middle">no data</text>`; } });
+  // x labels: first, last, and evenly spaced ones that do not collide
+  let lastX = -1e9;
+  const lbl = [0, n-1, ...Array.from({length:n}, (_,i)=>i)].filter((v,i,a)=>a.indexOf(v)===i);
+  const placed = [];
+  lbl.forEach(i => { const xi = x(i); if (placed.every(p => Math.abs(p-xi) > 46)) { placed.push(xi);
     const anchor = n === 1 ? 'middle' : i === 0 ? 'start' : i === n-1 ? 'end' : 'middle';
-    s += `<text x="${x(i)}" y="${H-6}" text-anchor="${anchor}">${shortDate(l)}</text>`; } });
+    s += `<text x="${xi}" y="${H-6}" text-anchor="${anchor}">${shortDate(labels[i])}</text>`; } });
   if (target) s += `<line x1="${m.l}" x2="${W-m.r}" y1="${y(target)}" y2="${y(target)}" stroke="var(--muted)" stroke-dasharray="4 3" stroke-width="1.5"/>`;
   let d = '', pen = false;
-  values.forEach((v,i) => { if (v == null) { pen = false; return; } d += (pen?'L':'M')+x(i)+','+y(v); pen = true; });
+  values.forEach((v,i) => { if (v == null || gapBefore(i)) pen = false; if (v == null) return; d += (pen?'L':'M')+x(i)+','+y(v); pen = true; });
   s += `<path d="${d}" fill="none" stroke="var(--series-1)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
   values.forEach((v,i) => { if (v != null) s += `<circle cx="${x(i)}" cy="${y(v)}" r="${n===1?5:3.5}" fill="var(--series-1)" stroke="var(--surface)" stroke-width="2"/>`; });
   s += `<line class="xh" x1="0" x2="0" y1="${m.t}" y2="${m.t+ih}" stroke="var(--axis)" stroke-width="1" style="display:none"/>`;
@@ -271,7 +283,7 @@ function lineChart(el, labels, values, {height=130, target=null, unit=''}={}){
   const svg = el.querySelector('svg'), xh = svg.querySelector('.xh');
   svg.addEventListener('mousemove', ev => {
     const r = svg.getBoundingClientRect(), px = ev.clientX - r.left;
-    let i = n === 1 ? 0 : Math.round((px - m.l) / (iw/(n-1))); i = Math.max(0, Math.min(n-1, i));
+    let i = 0, best = 1e9; for (let k = 0; k < n; k++) { const dd = Math.abs(x(k)-px); if (dd < best) { best = dd; i = k; } }
     xh.setAttribute('x1', x(i)); xh.setAttribute('x2', x(i)); xh.style.display = '';
     showTip(`<b>Week ending ${fmtDate(labels[i])}</b><br>${values[i]==null?'–':fmtFull(values[i])+unit}${target?`<br><span style="color:var(--muted)">Target: ${fmtFull(target)}</span>`:''}`, ev);
   });
@@ -288,18 +300,29 @@ $('#weekSel').onchange = e => { curWeek = e.target.value; renderWeek(); };
 function renderBanner(){
   const w = weeks[weekList.indexOf(curWeek)];
   const b = $('#banner');
-  if (w.semaine_partielle) {
+  if (w.source === 'legacy') {
+    b.innerHTML = `<b>Imported from the former activity sheet.</b> Only tech, helps, forts, building and power are available for this week (no login data, so no inactivity check).${w.sans_governor_id ? ` ${w.sans_governor_id} member(s) could not be linked to a governor ID: they count in alliance totals but not in member histories.` : ''}`;
+    b.hidden = false;
+  } else if (w.semaine_partielle) {
     b.innerHTML = `<b>Week in progress.</b> Snapshot taken on ${dayName(w.export_le)} ${fmtDate(w.export_le)}: figures only cover part of the week (Mon → Sun ${fmtDate(w.semaine)}), so flags are not final. Sunday's export will replace it.`;
     b.hidden = false;
   } else b.hidden = true;
 }
 
+/* label of the comparison week: "last week" when consecutive, otherwise its date */
+function sinceLabel(i){
+  if (i <= 0) return null;
+  const gap = (toT(weekList[i]) - toT(weekList[i-1])) / DAY;
+  return gap <= 7 ? 'last week' : `${shortDate(weekList[i-1])} (last tracked week)`;
+}
+
 /* ---------- tiles ---------- */
 function renderTiles(){
   const i = weekList.indexOf(curWeek), w = weeks[i], p = weeks[i-1];
-  const delta = (a,b,suf='') => b == null ? 'first tracked week' : `${a-b>=0?'+':''}${(Math.round((a-b)*10)/10).toLocaleString('en-US')}${suf} vs previous week`;
+  const vs = p ? (sinceLabel(i) === 'last week' ? 'vs previous week' : `vs ${shortDate(weekList[i-1])}`) : '';
+  const delta = (a,b,suf='') => b == null ? 'first tracked week' : `${a-b>=0?'+':''}${(Math.round((a-b)*10)/10).toLocaleString('en-US')}${suf} ${vs}`;
   const tiles = [
-    ['Members', w.membres, p ? `+${w.arrivees} joined · −${w.departs} left` : 'first tracked week'],
+    ['Members', w.membres, p ? `+${w.arrivees} joined · −${w.departs} left ${vs}` : 'first tracked week'],
     ['All targets met', (w.pct_tous_objectifs ?? 0).toLocaleString('en-US')+'%', delta(w.pct_tous_objectifs, p?.pct_tous_objectifs, ' pts')],
     ['Alert', w.n_alert, delta(w.n_alert, p?.n_alert)],
     ['Watch', w.n_watch, delta(w.n_watch, p?.n_watch)],
@@ -354,6 +377,9 @@ function renderBars(rows){
 /* arrivals / departures: compared by governor ID, never by name */
 function renderMovements(){
   const i = weekList.indexOf(curWeek);
+  const since = sinceLabel(i) || 'last week';
+  $('#departsTitle').textContent = `Left since ${since}`;
+  $('#arrivalsTitle').textContent = `Joined since ${since}`;
   if (i === 0) {
     $('#departs').innerHTML = $('#arrivals').innerHTML = '<div class="empty">First tracked week: no previous week to compare with.</div>';
     return;
@@ -367,7 +393,7 @@ function renderMovements(){
   $('#departs').innerHTML = list(prev.filter(m => !curIds.has(m.governor_id)), 'No departure detected.');
   const arrived = cur.filter(m => !prevIds.has(m.governor_id));
   $('#arrivals').innerHTML = list(arrived, 'No arrival detected.')
-    + (arrived.length ? '<p class="note-new"><i>No flags raised this week for newly arrived members — they are evaluated from their first full week.</i></p>' : '');
+    + (arrived.some(m => m.statut === 'New') ? '<p class="note-new"><i>No flags raised this week for newly arrived members — they are evaluated from their first full week.</i></p>' : '');
 }
 const akaHTML = m => m.anciens_pseudos ? `<div class="aka">aka ${esc(m.anciens_pseudos)}</div>` : '';
 
@@ -423,7 +449,7 @@ function renderTable(){
   $('#shown').textContent = total ? `Showing ${rows.length} of ${total}` : '';
   $('#tbl tbody').innerHTML = rows.map(m => {
     const cells = COLS.map(c => {
-      if (c.k === 'pseudo') return `<td><span class="name">${esc(m.pseudo)}</span>${m.nouveau && weekList.indexOf(curWeek)>0 ? '<span class="tag">new</span>':''}${akaHTML(m)}</td>`;
+      if (c.k === 'pseudo') return `<td><span class="name">${esc(m.pseudo)}</span>${akaHTML(m)}</td>`;
       if (c.k === 'statut') return `<td>${statusHTML(m.statut)}</td>`;
       if (c.k === 'rang') return `<td>${esc(m.rang)}</td>`;
       const v = m[c.k];
