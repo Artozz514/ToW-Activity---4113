@@ -79,9 +79,16 @@ td.miss::before{content:"✕ ";font-size:10px}
 .name{font-weight:550}
 .tag{display:inline-block;font-size:11px;color:var(--ink-2);border:1px solid var(--border);border-radius:5px;padding:0 5px;margin-left:5px}
 .reasons{color:var(--ink-2);font-size:12px}
-/* the flag list fills its card: on wide screens the card is as tall as its neighbour */
-.flagcard{display:flex;flex-direction:column}
-.flags{display:block;flex:1 1 0;min-height:420px;overflow-y:auto;padding-right:6px}
+.flags{max-height:560px;overflow:auto}
+.flagtbl th{position:sticky;top:0;background:var(--surface);z-index:1;cursor:default}
+.flagtbl td{vertical-align:top}
+.flagtbl .gid{font-variant-numeric:tabular-nums;color:var(--ink-2);white-space:nowrap}
+.flagtbl .why{font-size:11px;color:var(--muted);margin-top:2px;max-width:320px}
+.flagtbl .act{font-weight:550;white-space:nowrap}
+.flagtbl .donecol{text-align:center;width:56px}
+.flagtbl input[type=checkbox]{width:18px;height:18px;cursor:pointer;accent-color:var(--good)}
+.flagtbl tr.isdone td:not(.donecol){opacity:.45}
+.flagtbl tr.isdone .act{text-decoration:line-through}
 .flagcount{font-size:12px;color:var(--ink-2);margin:-4px 0 8px}
 .flag{display:grid;grid-template-columns:minmax(120px,190px) 1fr auto;gap:10px;align-items:start;padding:9px 0;border-bottom:1px solid var(--grid)}
 .flag:last-child{border-bottom:0}
@@ -142,13 +149,14 @@ details summary{cursor:pointer;color:var(--ink-2)}
     <div class="multiples" id="multiples"></div>
   </section>
 
+  <section class="card">
+    <h2>Flagged members</h2>
+    <p class="hint">Alerts first, then Watch. Exempt ranks and members who joined during the week are not listed. Tick <b>Done</b> once the action is taken: it is saved for this week in this browser.</p>
+    <div class="flagcount" id="flagcount"></div>
+    <div class="flags" id="flags"></div>
+  </section>
+
   <div class="grid2">
-    <section class="card flagcard">
-      <h2>Flagged members</h2>
-      <p class="hint">Alerts first, then Watch. Exempt ranks and members who joined during the week are not listed.</p>
-      <div class="flagcount" id="flagcount"></div>
-      <div class="flags" id="flags"></div>
-    </section>
     <section class="card">
       <h2>Targets met by activity</h2>
       <p class="hint">Share of members (excluding exempt and newly arrived) at or above the weekly minimum.</p>
@@ -355,15 +363,33 @@ function renderMultiples(){
 }
 
 /* ---------- flags ---------- */
+/* "Done" checkboxes: remembered per week and per governor ID in this browser (localStorage) */
+const DONE_KEY = 'tow-actions-done';
+function loadDone(){ try { return JSON.parse(localStorage.getItem(DONE_KEY) || '{}'); } catch(e) { return {}; } }
+function saveDone(d){ try { localStorage.setItem(DONE_KEY, JSON.stringify(d)); } catch(e) {} }
+
 function renderFlags(rows){
   const order = {'Alert':0,'Watch':1};
   const f = rows.filter(r => r.statut in order).sort((a,b) => order[a.statut]-order[b.statut] || (a.score??0)-(b.score??0));
-  const na = f.filter(r => r.statut === 'Alert').length;
-  $('#flagcount').textContent = f.length ? `${na} alert · ${f.length-na} watch (sorted by lowest score)` : '';
-  $('#flags').innerHTML = f.length ? f.map(r => `<div class="flag">
-      <div><span class="name">${esc(r.pseudo)}</span><span class="tag">${esc(r.rang)}</span>${akaHTML(r)}</div>
-      <div class="reasons">${esc(r.raisons)}</div>
-      <div>${statusHTML(r.statut)}</div></div>`).join('') : '<div class="empty">No flagged member this week.</div>';
+  const done = loadDone(), key = r => `${curWeek}:${r.governor_id}`;
+  const updateCount = () => {
+    const d = loadDone(), na = f.filter(r => r.statut === 'Alert').length, nd = f.filter(r => d[key(r)]).length;
+    $('#flagcount').textContent = f.length ? `${na} alert · ${f.length-na} watch · ${nd}/${f.length} actions done` : '';
+  };
+  $('#flags').innerHTML = f.length ? `<table class="flagtbl">
+    <thead><tr><th scope="col">Governor name</th><th scope="col">Governor ID</th><th scope="col">Status</th><th scope="col">Action to take</th><th scope="col" class="donecol">Done</th></tr></thead>
+    <tbody>${f.map(r => `<tr class="${done[key(r)] ? 'isdone' : ''}">
+      <td><span class="name">${esc(r.pseudo)}</span><span class="tag">${esc(r.rang)}</span>${akaHTML(r)}</td>
+      <td class="gid">${r.governor_id}</td>
+      <td>${statusHTML(r.statut)}<div class="why">${esc(r.raisons)}</div></td>
+      <td class="act">${esc(r.action || '')}</td>
+      <td class="donecol"><input type="checkbox" data-k="${key(r)}" ${done[key(r)] ? 'checked' : ''} aria-label="Action done for ${esc(r.pseudo)}"></td>
+    </tr>`).join('')}</tbody></table>` : '<div class="empty">No flagged member this week.</div>';
+  $('#flags').querySelectorAll('input[type=checkbox]').forEach(cb => cb.onchange = () => {
+    const d = loadDone(); if (cb.checked) d[cb.dataset.k] = new Date().toISOString(); else delete d[cb.dataset.k];
+    saveDone(d); cb.closest('tr').classList.toggle('isdone', cb.checked); updateCount();
+  });
+  updateCount();
 }
 
 /* ---------- bars ---------- */
@@ -533,8 +559,10 @@ function renderFooter(){
           `inactive for more than <b>${R.inactivite_jours} days</b>`,
           `<b>${R.alerte_si_kpis_manques}+ targets</b> missed in the week`,
           `<b>${R.alerte_si_semaines_consecutives}+ weeks in a row</b> with at least one target missed`,
+          ...(R.kpis_critiques||[]).map(k => `<b>${esc((KPIS.find(x => x.key === k)||{}).libelle || k)}</b> target missed (critical, even the first time)`),
         ])}
         <p>${statusHTML('Watch')} — no Alert condition, but <b>1 target</b> missed (first time).</p>
+        <p>Actions: Alert → <b>${esc((R.actions||{}).Alert||'')}</b> · Watch → <b>${esc((R.actions||{}).Watch||'')}</b>.</p>
         <p>A member who meets every target is never flagged, even if their activity dropped.</p>
         <p>Never flagged:</p>
         ${li([

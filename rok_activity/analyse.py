@@ -143,6 +143,8 @@ def compute(df: pd.DataFrame, roster: pd.DataFrame, cfg: dict, ranks: pd.DataFra
     evaluated, weights = [], {}
     df["kpis_manques"] = 0
     df["kpis_manques_liste"] = [[] for _ in range(len(df))]
+    df["kpi_critique_manque"] = False
+    critiques = set(rules.get("kpis_critiques", []) or [])
     for key, spec in kpis.items():
         df[f"{key}_semaine"] = _weekly_value(df, key, spec.get("mode", "hebdo"))
         tgt = _target(spec, df["rang"])
@@ -154,9 +156,11 @@ def compute(df: pd.DataFrame, roster: pd.DataFrame, cfg: dict, ranks: pd.DataFra
             df[f"{key}_ratio"] = ratio
             missed = (tgt > 0) & (df[f"{key}_semaine"].fillna(0) < tgt)
             df[f"{key}_ok"] = ~missed
+            if key in critiques:
+                df["kpi_critique_manque"] |= missed
             df["kpis_manques"] += missed.astype(int)
             for i in np.flatnonzero(missed.to_numpy()):
-                df.at[i, "kpis_manques_liste"].append(spec["libelle"])
+                df.at[i, "kpis_manques_liste"].append(spec["libelle"] + (" (critical)" if key in critiques else ""))
 
     # score objectif pondéré (100 = tous les objectifs pile atteints)
     if evaluated:
@@ -205,6 +209,7 @@ def compute(df: pd.DataFrame, roster: pd.DataFrame, cfg: dict, ranks: pd.DataFra
             (r.jours_sans_connexion or 0) > rules["inactivite_jours"]
             or r.kpis_manques >= rules["alerte_si_kpis_manques"]
             or r.semaines_consecutives_ko >= rules["alerte_si_semaines_consecutives"]
+            or r.kpi_critique_manque
         )
         if r.arrive_cette_semaine:
             statuts.append(NOUVEAU)
@@ -220,6 +225,15 @@ def compute(df: pd.DataFrame, roster: pd.DataFrame, cfg: dict, ranks: pd.DataFra
         raisons.append(" · ".join(why))
     df["statut"] = statuts
     df["raisons"] = raisons
+
+    # action à mener pour les membres flaggés (textes dans config.yaml → regles.actions)
+    acts = rules.get("actions", {}) or {}
+    def _action(statut: str, rang: str) -> str:
+        if statut == ALERTE and rang == "R1":
+            return "Already R1: keep in R1"
+        tpl = acts.get(statut, "")
+        return tpl.format(rang=rang) if tpl else ""
+    df["action"] = [_action(s_, r_) for s_, r_ in zip(df["statut"], df["rang"])]
 
     # anciens pseudos : l'ID est la seule clé, le pseudo n'est qu'un libellé qui peut changer
     anciens = []

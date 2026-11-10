@@ -56,7 +56,7 @@ def main(config_path: str = "config.yaml", publier: bool = True) -> None:
     # rapport Excel en anglais (destiné aux leaders de l'alliance)
     kpi_cols = {f"{k}_semaine": v["libelle"] for k, v in cfg["kpis"].items()}
     report_cols = {"pseudo": "Player", "governor_id": "Governor ID", "rang": "Rank", "statut": "Status",
-                   "raisons": "Reasons", "score": "Score", **kpi_cols, "puissance": "Power",
+                   "raisons": "Reasons", "action": "Action to take", "score": "Score", **kpi_cols, "puissance": "Power",
                    "puissance_evol": "Power change", "jours_sans_connexion": "Days since login",
                    "semaines_consecutives_ko": "Weeks below target"}
     sheet = week[list(report_cols)].rename(columns=report_cols)
@@ -64,7 +64,11 @@ def main(config_path: str = "config.yaml", publier: bool = True) -> None:
     try:
         import pandas as pd
         with pd.ExcelWriter(rapport) as xw:
-            sheet[sheet["Status"].isin([ALERTE, SURVEILLER])].to_excel(xw, sheet_name="Flags", index=False)
+            flags = sheet[sheet["Status"].isin([ALERTE, SURVEILLER])].copy()
+            flags["Status"] = pd.Categorical(flags["Status"], [ALERTE, SURVEILLER])
+            flags = flags.sort_values(["Status", "Score"]).assign(Done="")
+            flags[["Player", "Governor ID", "Status", "Action to take", "Done", "Rank", "Reasons", "Score"]].to_excel(
+                xw, sheet_name="Flags", index=False)
             sheet.to_excel(xw, sheet_name="Members", index=False)
             summary.to_excel(xw, sheet_name="Alliance", index=False)
             mv = {"pseudo": "Player", "governor_id": "Governor ID", "rang": "Rank", "puissance": "Power"}

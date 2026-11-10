@@ -39,8 +39,10 @@ Le dashboard contient : indicateurs clés, évolution de l'alliance, membres fla
 Objectifs officiels (fixes) : **50 000 tech**, **500 aides**, **80 forts** par semaine, pas de minimum pour la construction.
 
 - **Score** = moyenne pondérée de `valeur ÷ objectif` pour chaque KPI, plafonnée à 150 %. **100 = tous les objectifs pile atteints.** Ce score est absolu : contrairement à l'ancien fichier, on peut comparer les semaines entre elles.
-- **Alert** : inactif depuis plus de 3 jours, **ou** au moins 2 KPI ratés, **ou** au moins 2 semaines d'affilée sous l'objectif.
-- **Watch** : 1 KPI raté (une première fois). Un membre qui atteint tous ses objectifs n'est jamais flaggé, même si son activité baisse par rapport à ses semaines précédentes.
+- **Alert** : inactif depuis plus de 3 jours, **ou** objectif **forts** raté (KPI critique, même la 1re fois), **ou** au moins 2 KPI ratés, **ou** au moins 2 semaines d'affilée sous l'objectif. Action : **rétrograder en R1** (R3 → R1).
+- **Watch** : 1 KPI raté (une première fois, hors forts). Un membre qui atteint tous ses objectifs n'est jamais flaggé, même si son activité baisse par rapport à ses semaines précédentes. Action : **rester R3, ajouter un * au pseudo**.
+- Les KPI critiques (`kpis_critiques`) et les textes d'action (`actions`) se règlent dans `config.yaml`.
+- **Tableau « Flagged members »** : pseudo, Governor ID, statut (avec la raison), action à mener, case **Done**. La case est mémorisée par semaine et par membre **dans le navigateur de celui qui la coche** : les autres leaders ne la voient pas. L'onglet *Flags* du rapport Excel reprend le même tableau avec une colonne Done vide.
 - **Exempt** : rang listé dans `rangs_exemptes`, ou date d'exemption pas encore passée.
 - **New** : membre arrivé en cours de semaine (son ID apparaît pour la première fois). Il n'est jamais flaggé cette semaine-là, il est exclu des % d'objectifs et du Bottom 5, et sa série de semaines sous l'objectif ne démarre qu'à sa première semaine complète. Réglage : `pas_de_flag_semaine_arrivee` dans `config.yaml`.
 

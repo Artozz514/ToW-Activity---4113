@@ -49,7 +49,7 @@ def build_payload(hist: pd.DataFrame, summary: pd.DataFrame, cfg: dict, log: lis
         })
     member_cols = ["semaine", "governor_id", "pseudo", "rang", "statut", "raisons", "score",
                    "kpis_manques", "semaines_consecutives_ko", "jours_sans_connexion", "nouveau",
-                   "puissance", "puissance_evol", "kills_evol", "note", "anciens_pseudos"]
+                   "puissance", "puissance_evol", "kills_evol", "note", "anciens_pseudos", "action"]
     for key in kpis:
         member_cols += [f"{key}_semaine", f"{key}_objectif"]
     member_cols = [c for c in member_cols if c in hist.columns]
