@@ -50,9 +50,11 @@ Tous ces seuils sont réglables dans `config.yaml`.
 
 ## Mettre en ligne (GitHub Pages)
 
-**Lien à partager aux leaders : https://arthurgrizon.github.io/ToW-Activity---4113/** (il ne change jamais).
+**Lien à partager aux leaders : https://artozz514.github.io/ToW-Activity---4113/**
 
-- Chaque exécution de `run_weekly.py` copie le dashboard dans `docs/index.html`, puis l'envoie sur le dépôt GitHub `arthurgrizon/ToW-Activity---4113`. Le site est à jour 1 à 2 minutes plus tard.
+⚠ Le lien contient le nom du compte GitHub et celui du dépôt : renommer l'un ou l'autre change le lien, et l'ancien ne redirige pas (erreur 404). Pour un lien stable, transférer le dépôt dans une organisation GitHub (ex. `tow-4113`).
+
+- Chaque exécution de `run_weekly.py` copie le dashboard dans `docs/index.html`, puis l'envoie sur le dépôt GitHub `Artozz514/ToW-Activity---4113`. Le site est à jour 1 à 2 minutes plus tard.
 - Pour tout recalculer sans rien publier : `python run_weekly.py --sans-publication`. Pour couper la publication : `publication.activer: false` dans `config.yaml`.
 - La page est **publique** : quiconque a le lien la voit. Elle n'est pas indexée par Google (balise `noindex`). Ne rien mettre dans les notes du roster qu'on ne voudrait pas voir lu par les joueurs.
 - Envoyés sur GitHub : le code, la config, `roster.csv`, les exports de `data/raw/` (indispensables pour reconstruire l'historique) et `docs/`. Le fichier legacy et `output/` restent en local (voir `.gitignore`).
