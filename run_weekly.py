@@ -22,7 +22,7 @@ from pathlib import Path
 
 import yaml
 
-from rok_activity.analyse import ALERTE, SURVEILLER, alliance_summary, compute, movements, renames, sync_roster
+from rok_activity.analyse import ALERTE, SURVEILLER, alliance_summary, compute, leadership_changes, movements, record_ranks, renames, sync_roster
 from rok_activity.dashboard import build_payload, write_dashboard
 from rok_activity.ingest import load_exports
 from rok_activity.publish import publish
@@ -39,7 +39,10 @@ def main(config_path: str = "config.yaml", publier: bool = True) -> None:
 
     raw, log = load_exports(cfg, ROOT)
     roster = sync_roster(raw, ROOT / cfg["dossiers"]["roster"], log)
-    hist = compute(raw, roster, cfg)
+    ranks = record_ranks(raw, roster, ROOT / "data" / "rangs_historique.csv", log)
+    hist = compute(raw, roster, cfg, ranks)
+    r4 = leadership_changes(hist)
+    log.extend(f"{c.changement}: {c.pseudo} ({c.rang_avant} → {c.rang}, ID {c.governor_id})" for c in r4.itertuples())
     summary = alliance_summary(hist, cfg)
     gone, arrived = movements(hist)
     log.extend(renames(hist))
@@ -67,6 +70,8 @@ def main(config_path: str = "config.yaml", publier: bool = True) -> None:
             mv = {"pseudo": "Player", "governor_id": "Governor ID", "rang": "Rank", "puissance": "Power"}
             gone.rename(columns=mv).to_excel(xw, sheet_name="Departures", index=False)
             arrived.rename(columns=mv).to_excel(xw, sheet_name="Arrivals", index=False)
+            r4.rename(columns={**mv, "rang_avant": "Previous rank", "changement": "Change"}).to_excel(
+                xw, sheet_name="R4 changes", index=False)
     except PermissionError:
         log.append(f"{rapport.name} is open in Excel: report not rewritten.")
 

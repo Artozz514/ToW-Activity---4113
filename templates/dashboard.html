@@ -112,6 +112,8 @@ details summary{cursor:pointer;color:var(--ink-2)}
 .note-new{font-size:12px;color:var(--ink-2);margin:6px 0 0}
 .pager{display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
 .pager #shown{margin-right:auto}
+.r4line{font-size:12px;color:var(--ink-2);margin:4px 0}
+.r4lbl{font-weight:600;color:var(--ink);margin-right:6px}
 .aka{font-size:11px;color:var(--muted);margin-top:1px}
 .legend-line{display:inline-block;width:16px;border-top:2px dashed var(--muted);vertical-align:middle;margin-right:4px}
 </style>
@@ -155,6 +157,8 @@ details summary{cursor:pointer;color:var(--ink-2)}
       <div id="departs"></div>
       <h2 style="margin-top:18px">Joined since last week</h2>
       <div id="arrivals"></div>
+      <h2 style="margin-top:18px">R4 changes since last week</h2>
+      <div id="r4changes"></div>
       <p class="hint" style="margin-top:8px">Members are matched by governor ID, so a name change is never counted as a departure + arrival.</p>
     </section>
   </div>
@@ -381,7 +385,7 @@ function renderMovements(){
   if (pi < 0) {
     const msg = i === 0 ? 'First tracked week: no previous week to compare with.'
       : `The previous week (ending ${fmtDate(new Date(toT(curWeek) - 7*DAY).toISOString())}) was not tracked: no comparison available.`;
-    $('#departs').innerHTML = $('#arrivals').innerHTML = `<div class="empty">${msg}</div>`;
+    $('#departs').innerHTML = $('#arrivals').innerHTML = $('#r4changes').innerHTML = `<div class="empty">${msg}</div>`;
     return;
   }
   const prev = members.filter(m => m.semaine === weekList[pi]);
@@ -391,9 +395,23 @@ function renderMovements(){
     ? `<div class="reasons">${rows.sort((a,b) => (b.puissance??0)-(a.puissance??0)).map(d => `<span title="ID ${d.governor_id} · Power ${fmt(d.puissance)}">${esc(d.pseudo)}</span> <span class="tag">${esc(d.rang)}</span>`).join(' · ')}</div>`
     : `<div class="empty">${empty}</div>`;
   $('#departs').innerHTML = list(prev.filter(m => !curIds.has(m.governor_id)), 'No departure detected.');
+  renderR4Changes(prev, cur);
   const arrived = cur.filter(m => !prevIds.has(m.governor_id));
   $('#arrivals').innerHTML = list(arrived, 'No arrival detected.')
     + (arrived.some(m => m.statut === 'New') ? '<p class="note-new"><i>No flags raised this week for newly arrived members — they are evaluated from their first full week.</i></p>' : '');
+}
+/* R4 group = R4 + R5. Only moves between R1-R3 and R4/R5 count; R4 <-> R5 swaps and unknown ranks are ignored */
+function renderR4Changes(prev, cur){
+  const LEAD = new Set(['R4','R5']), BASE = new Set(['R1','R2','R3']);
+  const before = new Map(prev.map(m => [m.governor_id, m.rang]));
+  const up = [], down = [];
+  cur.forEach(m => { const r0 = before.get(m.governor_id); if (r0 == null) return;
+    if (BASE.has(r0) && LEAD.has(m.rang)) up.push({m, r0});
+    if (LEAD.has(r0) && BASE.has(m.rang)) down.push({m, r0}); });
+  const line = (label, arr) => `<div class="r4line"><span class="r4lbl">${label}</span>${arr.map(({m,r0}) => `<span title="ID ${m.governor_id}">${esc(m.pseudo)}</span> <span class="tag">${esc(r0)} → ${esc(m.rang)}</span>`).join(' · ')}</div>`;
+  $('#r4changes').innerHTML = (up.length || down.length)
+    ? (up.length ? line('Promoted to R4:', up) : '') + (down.length ? line('Removed from R4:', down) : '')
+    : '<div class="empty">No change in R4.</div>';
 }
 const akaHTML = m => m.anciens_pseudos ? `<div class="aka">aka ${esc(m.anciens_pseudos)}</div>` : '';
 

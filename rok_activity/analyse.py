@@ -49,6 +49,48 @@ def sync_roster(df: pd.DataFrame, path: Path, log: list[str]) -> pd.DataFrame:
     return roster
 
 
+LEADERSHIP = {"R4", "R5"}   # le groupe « R4 » : une permutation R4 <-> R5 n'est pas un changement
+MEMBRES = {"R1", "R2", "R3"}
+
+
+def record_ranks(df: pd.DataFrame, roster: pd.DataFrame, path: Path, log: list[str]) -> pd.DataFrame:
+    """Photo des rangs du roster pour la semaine la plus récente, ajoutée à data/rangs_historique.csv.
+
+    Les exports du jeu ne contiennent pas le rang : sans cette photo hebdomadaire, on ne saurait
+    pas qui était R4 la semaine dernière. Seule la dernière semaine est (ré)écrite ; les semaines
+    passées ne sont jamais modifiées. Ce fichier est donc un état à conserver (il est versionné).
+    """
+    cols = ["semaine", "governor_id", "rang"]
+    hist = pd.read_csv(path, parse_dates=["semaine"], encoding="utf-8-sig") if path.exists() else pd.DataFrame(columns=cols)
+    last = df["semaine"].max()
+    ids = df.loc[df["semaine"] == last, "governor_id"]
+    snap = roster[roster["governor_id"].isin(ids)][["governor_id", "rang"]].copy()
+    snap["rang"] = snap["rang"].fillna("").astype(str).str.strip()
+    snap = snap[snap["rang"] != ""]
+    snap.insert(0, "semaine", pd.Timestamp(last))
+    keep = hist[pd.to_datetime(hist["semaine"]) != last]
+    hist = pd.concat([keep, snap], ignore_index=True) if len(keep) else snap
+    hist["governor_id"] = pd.to_numeric(hist["governor_id"]).astype("Int64")
+    hist.sort_values(["semaine", "governor_id"])[cols].to_csv(path, index=False, encoding="utf-8-sig", date_format="%Y-%m-%d")
+    return hist
+
+
+def leadership_changes(hist: pd.DataFrame, week=None) -> pd.DataFrame:
+    """Entrées / sorties du groupe R4 (R4-R5) entre une semaine et la semaine juste avant (J-7).
+    Les passages R4 <-> R5 et les rangs inconnus (« ? ») sont ignorés."""
+    cols = ["governor_id", "pseudo", "rang_avant", "rang", "changement"]
+    weeks = sorted(hist["semaine"].unique())
+    week = pd.Timestamp(week if week is not None else weeks[-1])
+    prev = week - pd.Timedelta(days=7)
+    a = hist[hist["semaine"] == prev][["governor_id", "rang"]].rename(columns={"rang": "rang_avant"})
+    b = hist[hist["semaine"] == week][["governor_id", "pseudo", "rang"]]
+    m = b.merge(a, on="governor_id")
+    up = m["rang_avant"].isin(MEMBRES) & m["rang"].isin(LEADERSHIP)
+    down = m["rang_avant"].isin(LEADERSHIP) & m["rang"].isin(MEMBRES)
+    m["changement"] = np.where(up, "Promoted to R4", np.where(down, "Removed from R4", ""))
+    return m[up | down][cols]
+
+
 # ---------------------------------------------------------------- helpers
 def _target(spec: dict, rang: pd.Series) -> pd.Series:
     obj = spec.get("objectif", 0) or 0
@@ -67,15 +109,22 @@ def _weekly_value(df: pd.DataFrame, key: str, mode: str) -> pd.Series:
 
 
 # ---------------------------------------------------------------- main
-def compute(df: pd.DataFrame, roster: pd.DataFrame, cfg: dict) -> pd.DataFrame:
+def compute(df: pd.DataFrame, roster: pd.DataFrame, cfg: dict, ranks: pd.DataFrame | None = None) -> pd.DataFrame:
     rules = cfg["regles"]
     kpis = cfg["kpis"]
     df = df.sort_values(["governor_id", "semaine"]).reset_index(drop=True)
 
     df = df.merge(roster[["governor_id", "rang", "exempte_jusqu_au", "note"]], on="governor_id", how="left")
-    # rang : roster d'abord, sinon celui noté dans le fichier (semaines legacy), sinon « ? »
-    rang_export = df["rang_export"].astype("string").fillna("") if "rang_export" in df else ""
-    df["rang"] = df["rang"].fillna("").str.strip().replace("", np.nan).fillna(rang_export).replace("", "?")
+    # rang de la semaine : photo hebdo (rangs_historique.csv), sinon rang noté dans le fichier
+    # (semaines legacy), sinon rang actuel du roster, sinon « ? »
+    if ranks is not None and len(ranks):
+        r = ranks.rename(columns={"rang": "rang_semaine"}).copy()
+        r["semaine"] = pd.to_datetime(r["semaine"])
+        df = df.merge(r[["semaine", "governor_id", "rang_semaine"]], on=["semaine", "governor_id"], how="left")
+    else:
+        df["rang_semaine"] = np.nan
+    vide = lambda c: df[c].astype("string").str.strip().replace("", pd.NA) if c in df else pd.NA
+    df["rang"] = vide("rang_semaine").fillna(vide("rang_export")).fillna(vide("rang")).fillna("?").astype(str)
 
     # semaine précédente du membre et de l'alliance : on ne relie deux semaines que si elles se suivent
     une_semaine = pd.Timedelta(days=7)

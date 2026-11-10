@@ -26,6 +26,14 @@ Le dashboard contient : indicateurs clés, évolution de l'alliance, membres fla
 - **`config.yaml`** : objectifs, poids, règles de flag, rangs exemptés. Un objectif peut dépendre du rang : `objectif: {defaut: 6000, R4: 8000}`.
 - **`roster.csv`** : rang de chaque membre, exemption temporaire (`exempte_jusqu_au` = `30/11/2026`, pour des vacances par exemple), note libre. Les nouveaux IDs sont ajoutés tout seuls ; la colonne pseudo suit le pseudo en jeu.
 
+## Rangs et changements de R4
+
+- Le jeu n'exporte pas le rang : **c'est `roster.csv` qui fait foi**. À chaque exécution, les rangs du roster sont photographiés pour la semaine en cours dans `data/rangs_historique.csv`. Les semaines passées n'y sont jamais modifiées.
+- ⚠ **Ce fichier ne peut pas être recalculé** (contrairement au reste) : ne pas le supprimer. Il est sauvegardé sur GitHub.
+- **Pour qu'une promotion soit datée correctement**, il faut mettre à jour le rang dans `roster.csv` *avant* de lancer le traitement du dimanche.
+- **« R4 changes since last week »** (dashboard, sous les arrivées) liste les membres qui entrent dans le groupe R4 (R1/R2/R3 → R4 ou R5) ou qui en sortent (R4/R5 → R1/R2/R3), par rapport à la semaine juste avant. Les permutations R4 ↔ R5 et les rangs inconnus (« ? ») sont ignorés. On retrouve la même liste dans l'onglet *R4 changes* du rapport Excel et dans le journal.
+- Pour les semaines legacy, on utilise le rang noté dans l'ancien fichier.
+
 ## Comment un membre est classé
 
 Objectifs officiels (fixes) : **50 000 tech**, **500 aides**, **80 forts** par semaine, pas de minimum pour la construction.
@@ -73,6 +81,7 @@ Il faut Python ≥ 3.10. Anaconda contient déjà tout le nécessaire.
 ```
 config.yaml            objectifs et règles
 roster.csv             rangs, exemptions, notes
+data/rangs_historique.csv  photo hebdo des rangs (à conserver)
 data/raw/              exports hebdo bruts (ne pas renommer)
 rok_activity/          code : ingest.py (lecture) · analyse.py (calculs) · dashboard.py (HTML) · publish.py (GitHub)
 templates/dashboard.html  gabarit du dashboard
