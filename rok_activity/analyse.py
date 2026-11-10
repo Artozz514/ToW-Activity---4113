@@ -187,14 +187,6 @@ def compute(df: pd.DataFrame, roster: pd.DataFrame, cfg: dict, ranks: pd.DataFra
         streak[i], prev_id = run, gid
     df["semaines_consecutives_ko"] = streak
 
-    # baisse forte vs moyenne des 4 semaines précédentes
-    # (uniquement sur des semaines consécutives : un trou dans l'historique redémarre la moyenne)
-    segment = (~df["suite"]).groupby(df["governor_id"]).cumsum()
-    prev_mean = df.groupby([df["governor_id"], segment])["score"].transform(
-        lambda s: s.shift(1).rolling(4, min_periods=1).mean())
-    df["score_moy_4s"] = prev_mean.round(1)
-    df["baisse_forte"] = prev_mean.notna() & (prev_mean > 0) & (df["score"] < prev_mean * (1 - rules["baisse_forte_pct"] / 100))
-
     # exemptions
     exempt_until = pd.to_datetime(df["exempte_jusqu_au"], errors="coerce", dayfirst=True)
     df["exempte"] = df["rang"].isin(rules.get("rangs_exemptes", [])) | (exempt_until.notna() & (exempt_until >= df["semaine"]))
@@ -209,8 +201,6 @@ def compute(df: pd.DataFrame, roster: pd.DataFrame, cfg: dict, ranks: pd.DataFra
             why.append("Below target: " + ", ".join(r.kpis_manques_liste))
         if r.semaines_consecutives_ko >= 2:
             why.append(f"{r.semaines_consecutives_ko} weeks in a row below target")
-        if r.baisse_forte:
-            why.append(f"Sharp score drop ({r.score:.0f} vs 4-week avg {r.score_moy_4s:.0f})")
         alerte = (
             (r.jours_sans_connexion or 0) > rules["inactivite_jours"]
             or r.kpis_manques >= rules["alerte_si_kpis_manques"]

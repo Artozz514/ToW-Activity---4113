@@ -534,11 +534,8 @@ function renderFooter(){
           `<b>${R.alerte_si_kpis_manques}+ targets</b> missed in the week`,
           `<b>${R.alerte_si_semaines_consecutives}+ weeks in a row</b> with at least one target missed`,
         ])}
-        <p>${statusHTML('Watch')} — no Alert condition, but one of:</p>
-        ${li([
-          `<b>1 target</b> missed (first time)`,
-          `score below <b>${100-R.baisse_forte_pct}%</b> of the member's own 4-week average (sharp drop)`,
-        ])}
+        <p>${statusHTML('Watch')} — no Alert condition, but <b>1 target</b> missed (first time).</p>
+        <p>A member who meets every target is never flagged, even if their activity dropped.</p>
         <p>Never flagged:</p>
         ${li([
           ...(R.pas_de_flag_semaine_arrivee!==false ? [`${statusHTML('New')} joined during the week — evaluated from their first full week`] : []),

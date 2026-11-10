@@ -88,7 +88,6 @@ regles:
   inactivite_jours: 3           # dernière connexion plus vieille que ça => Alerte
   alerte_si_kpis_manques: 2     # nb de KPI ratés la même semaine => Alerte
   alerte_si_semaines_consecutives: 2   # nb de semaines d'affilée avec ≥1 KPI raté => Alerte
-  baisse_forte_pct: 50          # score < 50 % de sa moyenne des 4 semaines précédentes => À surveiller
   rangs_exemptes: ["R5"]        # jamais flaggés (affichés quand même)
   pas_de_flag_semaine_arrivee: true   # un membre arrivé en cours de semaine a le statut « New » :
                                       # pas de flag, exclu des % d'objectifs, évalué dès sa 1re semaine complète
