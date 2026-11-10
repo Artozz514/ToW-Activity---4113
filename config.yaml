@@ -31,7 +31,7 @@ colonnes:
 #  libelle: nom affiché dans le dashboard (EN ANGLAIS : alliance internationale)
 #
 #  Objectifs officiels de l'alliance (fixes dans le temps).
-#  Poids repris du fichier legacy (tech 25 / aides 20 / forts 35).
+#  Poids du score : tech 30 % / aides 25 % / forts 45 % (construction non notée).
 # ---------------------------------------------------------------------
 kpis:
   tech:
@@ -39,19 +39,19 @@ kpis:
     colonne: "Technology points"
     mode: "hebdo"
     objectif: 50000
-    poids: 0.25
+    poids: 0.30
   aides:
     libelle: "Alliance helps"
     colonne: "Alliance helps"
     mode: "hebdo"
     objectif: 500
-    poids: 0.20
+    poids: 0.25
   forts:
     libelle: "Forts destroyed"
     colonne: "Forts destroyed"
     mode: "hebdo"
     objectif: 80
-    poids: 0.35
+    poids: 0.45
   construction:
     libelle: "Alliance building (s)"
     colonne: "Building time (seconds)"
