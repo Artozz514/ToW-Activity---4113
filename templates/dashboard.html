@@ -149,9 +149,9 @@ details summary{cursor:pointer;color:var(--ink-2)}
       <h2>Targets met by activity</h2>
       <p class="hint">Share of members (excluding exempt and newly arrived) at or above the weekly minimum.</p>
       <div class="bars" id="bars"></div>
-      <h2 style="margin-top:18px" id="departsTitle">Left since last week</h2>
+      <h2 style="margin-top:18px">Left since last week</h2>
       <div id="departs"></div>
-      <h2 style="margin-top:18px" id="arrivalsTitle">Joined since last week</h2>
+      <h2 style="margin-top:18px">Joined since last week</h2>
       <div id="arrivals"></div>
       <p class="hint" style="margin-top:8px">Members are matched by governor ID, so a name change is never counted as a departure + arrival.</p>
     </section>
@@ -309,20 +309,19 @@ function renderBanner(){
   } else b.hidden = true;
 }
 
-/* label of the comparison week: "last week" when consecutive, otherwise its date */
-function sinceLabel(i){
-  if (i <= 0) return null;
-  const gap = (toT(weekList[i]) - toT(weekList[i-1])) / DAY;
-  return gap <= 7 ? 'last week' : `${shortDate(weekList[i-1])} (last tracked week)`;
+/* comparisons (deltas, arrivals, departures) only against the week right before (D-7).
+   If that week was not tracked, no comparison is shown: a longer gap would mislead. */
+function prevWeekIndex(i){
+  return i > 0 && (toT(weekList[i]) - toT(weekList[i-1])) / DAY === 7 ? i-1 : -1;
 }
 
 /* ---------- tiles ---------- */
 function renderTiles(){
-  const i = weekList.indexOf(curWeek), w = weeks[i], p = weeks[i-1];
-  const vs = p ? (sinceLabel(i) === 'last week' ? 'vs previous week' : `vs ${shortDate(weekList[i-1])}`) : '';
-  const delta = (a,b,suf='') => b == null ? 'first tracked week' : `${a-b>=0?'+':''}${(Math.round((a-b)*10)/10).toLocaleString('en-US')}${suf} ${vs}`;
+  const i = weekList.indexOf(curWeek), w = weeks[i], pi = prevWeekIndex(i), p = pi >= 0 ? weeks[pi] : null;
+  const none = i === 0 ? 'first tracked week' : 'previous week not tracked';
+  const delta = (a,b,suf='') => (p == null || b == null) ? none : `${a-b>=0?'+':''}${(Math.round((a-b)*10)/10).toLocaleString('en-US')}${suf} vs previous week`;
   const tiles = [
-    ['Members', w.membres, p ? `+${w.arrivees} joined · −${w.departs} left ${vs}` : 'first tracked week'],
+    ['Members', w.membres, p ? `+${w.arrivees} joined · −${w.departs} left vs previous week` : none],
     ['All targets met', (w.pct_tous_objectifs ?? 0).toLocaleString('en-US')+'%', delta(w.pct_tous_objectifs, p?.pct_tous_objectifs, ' pts')],
     ['Alert', w.n_alert, delta(w.n_alert, p?.n_alert)],
     ['Watch', w.n_watch, delta(w.n_watch, p?.n_watch)],
@@ -376,15 +375,14 @@ function renderBars(rows){
 
 /* arrivals / departures: compared by governor ID, never by name */
 function renderMovements(){
-  const i = weekList.indexOf(curWeek);
-  const since = sinceLabel(i) || 'last week';
-  $('#departsTitle').textContent = `Left since ${since}`;
-  $('#arrivalsTitle').textContent = `Joined since ${since}`;
-  if (i === 0) {
-    $('#departs').innerHTML = $('#arrivals').innerHTML = '<div class="empty">First tracked week: no previous week to compare with.</div>';
+  const i = weekList.indexOf(curWeek), pi = prevWeekIndex(i);
+  if (pi < 0) {
+    const msg = i === 0 ? 'First tracked week: no previous week to compare with.'
+      : `The previous week (ending ${fmtDate(new Date(toT(curWeek) - 7*DAY).toISOString())}) was not tracked: no comparison available.`;
+    $('#departs').innerHTML = $('#arrivals').innerHTML = `<div class="empty">${msg}</div>`;
     return;
   }
-  const prev = members.filter(m => m.semaine === weekList[i-1]);
+  const prev = members.filter(m => m.semaine === weekList[pi]);
   const cur = members.filter(m => m.semaine === curWeek);
   const prevIds = new Set(prev.map(m => m.governor_id)), curIds = new Set(cur.map(m => m.governor_id));
   const list = (rows, empty) => rows.length

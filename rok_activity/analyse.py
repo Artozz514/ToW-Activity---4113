@@ -139,7 +139,10 @@ def compute(df: pd.DataFrame, roster: pd.DataFrame, cfg: dict) -> pd.DataFrame:
     df["semaines_consecutives_ko"] = streak
 
     # baisse forte vs moyenne des 4 semaines précédentes
-    prev_mean = df.groupby("governor_id")["score"].transform(lambda s: s.shift(1).rolling(4, min_periods=1).mean())
+    # (uniquement sur des semaines consécutives : un trou dans l'historique redémarre la moyenne)
+    segment = (~df["suite"]).groupby(df["governor_id"]).cumsum()
+    prev_mean = df.groupby([df["governor_id"], segment])["score"].transform(
+        lambda s: s.shift(1).rolling(4, min_periods=1).mean())
     df["score_moy_4s"] = prev_mean.round(1)
     df["baisse_forte"] = prev_mean.notna() & (prev_mean > 0) & (df["score"] < prev_mean * (1 - rules["baisse_forte_pct"] / 100))
 
@@ -201,15 +204,16 @@ def alliance_summary(hist: pd.DataFrame, cfg: dict) -> pd.DataFrame:
         w = hist[hist["semaine"] == wk]
         ids = set(w["governor_id"])
         export_le = pd.Timestamp(w["horodatage_export"].iloc[0])
+        consecutive = prev_wk is not None and (pd.Timestamp(wk) - pd.Timestamp(prev_wk)) == pd.Timedelta(days=7)
         row = {"semaine": pd.Timestamp(wk), "membres": len(w),
                "export_le": export_le,
                "semaine_partielle": bool(export_le.normalize() < pd.Timestamp(wk)),
                "source": w["source"].iloc[0] if "source" in w else "export",
                "semaine_precedente": pd.Timestamp(prev_wk) if prev_wk is not None else pd.NaT,
                "sans_governor_id": int((w["governor_id"] < 0).sum()),
-               # comparés par ID avec la semaine suivie précédente (qui peut être plus ancienne qu'une semaine)
-               "arrivees": len(ids - prev_ids) if prev_ids else 0,
-               "departs": len(prev_ids - ids) if prev_ids else 0}
+               # comparés par ID, uniquement si la semaine juste avant (J-7) est suivie ; sinon vide
+               "arrivees": len(ids - prev_ids) if consecutive else np.nan,
+               "departs": len(prev_ids - ids) if consecutive else np.nan}
         evaluables = w[~w["statut"].isin(NON_EVALUES)]
         for key in cfg["kpis"]:
             row[f"{key}_total"] = w[f"{key}_semaine"].sum()
@@ -231,6 +235,8 @@ def renames(hist: pd.DataFrame) -> list[str]:
     weeks = sorted(hist["semaine"].unique())
     if len(weeks) < 2:
         return []
+    if pd.Timestamp(weeks[-1]) - pd.Timestamp(weeks[-2]) != pd.Timedelta(days=7):
+        return []
     prev = hist[hist["semaine"] == weeks[-2]].set_index("governor_id")["pseudo"]
     last = hist[hist["semaine"] == weeks[-1]].set_index("governor_id")["pseudo"]
     both = prev.index.intersection(last.index)
@@ -244,6 +250,8 @@ def movements(hist: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     if len(weeks) < 2:
         return hist.iloc[0:0][cols], hist.iloc[0:0][cols]
     last, prev = weeks[-1], weeks[-2]
+    if pd.Timestamp(last) - pd.Timestamp(prev) != pd.Timedelta(days=7):  # semaine d'avant non suivie
+        return hist.iloc[0:0][cols], hist.iloc[0:0][cols]
     ids_prev = set(hist.loc[hist["semaine"] == prev, "governor_id"])
     ids_last = set(hist.loc[hist["semaine"] == last, "governor_id"])
     gone = hist[(hist["semaine"] == prev) & hist["governor_id"].isin(ids_prev - ids_last)][cols]
