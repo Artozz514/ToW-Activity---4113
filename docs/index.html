@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>ToW Activity</title>
+<style>
+:root{
+  color-scheme:light;
+  --page:#f9f9f7; --surface:#fcfcfb; --surface-2:#f3f2ee;
+  --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781;
+  --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,.10);
+  --series-1:#2a78d6; --series-1-soft:#cde2fb;
+  --good:#0ca30c; --good-text:#006300; --warning:#fab219; --warning-text:#8a5a00; --critical:#d03b3b; --critical-text:#b02a2a;
+  --neutral:#898781;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --page:#0d0d0d; --surface:#1a1a19; --surface-2:#232321;
+    --ink:#f0efec; --ink-2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.10);
+    --series-1:#3987e5; --series-1-soft:#184f95;
+    --good-text:#0ca30c; --warning-text:#fab219; --critical-text:#e66767;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --page:#0d0d0d; --surface:#1a1a19; --surface-2:#232321;
+  --ink:#f0efec; --ink-2:#c3c2b7; --muted:#898781;
+  --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.10);
+  --series-1:#3987e5; --series-1-soft:#184f95;
+  --good-text:#0ca30c; --warning-text:#fab219; --critical-text:#e66767;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1200px;margin:0 auto;padding:20px 16px 48px}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;justify-content:space-between;margin-bottom:18px}
+h1{font-size:22px;margin:0;font-weight:650;letter-spacing:-.01em}
+.sub{color:var(--ink-2);font-size:13px}
+h2{font-size:15px;margin:0 0 4px;font-weight:620}
+.hint{color:var(--muted);font-size:12px;margin:0 0 12px}
+.controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+select,input[type=search]{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px 10px;min-height:34px}
+button.theme{font:inherit;background:var(--surface);color:var(--ink-2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer;min-height:34px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px;min-width:0}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px}
+.tile{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+.tile .lbl{color:var(--ink-2);font-size:12px}
+.tile .val{font-size:28px;font-weight:650;margin-top:2px;font-variant-numeric:tabular-nums}
+.tile .delta{font-size:12px;color:var(--muted);margin-top:2px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:16px}
+.multiples{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:16px 20px}
+.mini h3{font-size:13px;margin:0 0 2px;font-weight:600}
+.mini .now{font-size:12px;color:var(--ink-2);margin-bottom:4px;font-variant-numeric:tabular-nums}
+svg text{fill:var(--muted);font-size:11px}
+.chart{position:relative}
+.tip{position:absolute;pointer-events:none;background:var(--surface);color:var(--ink);border:1px solid var(--border);border-radius:8px;padding:6px 9px;font-size:12px;box-shadow:0 4px 14px rgba(0,0,0,.12);white-space:nowrap;display:none;z-index:5;font-variant-numeric:tabular-nums}
+.tip b{font-weight:600}
+.status{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:550;white-space:nowrap}
+.status i{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none}
+.s-ok{color:var(--good-text)} .s-ok i{background:var(--good)}
+.s-warn{color:var(--warning-text)} .s-warn i{background:var(--warning)}
+.s-crit{color:var(--critical-text)} .s-crit i{background:var(--critical)}
+.s-ex{color:var(--ink-2)} .s-ex i{background:var(--neutral)}
+.s-new{color:var(--ink-2)} .s-new i{background:transparent;border:2px solid var(--series-1);width:9px;height:9px;box-sizing:border-box}
+.tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--grid);vertical-align:top}
+th{font-size:12px;color:var(--ink-2);font-weight:600;cursor:pointer;user-select:none;white-space:nowrap;position:sticky;top:0;background:var(--surface)}
+th.num,td.num{text-align:right}
+th[aria-sort=ascending]::after{content:" ▲";font-size:9px}
+th[aria-sort=descending]::after{content:" ▼";font-size:9px}
+tbody tr.row{cursor:pointer}
+tbody tr.row:hover{background:var(--surface-2)}
+td.miss{color:var(--critical-text);font-weight:600}
+td.miss::before{content:"✕ ";font-size:10px}
+.name{font-weight:550}
+.tag{display:inline-block;font-size:11px;color:var(--ink-2);border:1px solid var(--border);border-radius:5px;padding:0 5px;margin-left:5px}
+.reasons{color:var(--ink-2);font-size:12px}
+.flags{display:grid;gap:0;max-height:460px;overflow-y:auto;padding-right:6px}
+.flagcount{font-size:12px;color:var(--ink-2);margin:-4px 0 8px}
+.flag{display:grid;grid-template-columns:minmax(120px,190px) 1fr auto;gap:10px;align-items:start;padding:9px 0;border-bottom:1px solid var(--grid)}
+.flag:last-child{border-bottom:0}
+@media (max-width:600px){.flag{grid-template-columns:1fr}}
+.bars .bar{display:grid;grid-template-columns:minmax(110px,170px) 1fr 52px;gap:10px;align-items:center;margin:8px 0}
+.bars .track{height:14px;background:var(--surface-2);border-radius:4px;position:relative;overflow:hidden}
+.bars .fill{height:100%;background:var(--series-1);border-radius:0 4px 4px 0}
+.bars .pct{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.detail td{background:var(--surface-2);padding:14px}
+.empty{color:var(--muted);font-style:italic;padding:8px 0}
+footer{color:var(--ink-2);font-size:12px;margin-top:24px}
+.method{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:12px 28px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px}
+.method h3{font-size:13px;color:var(--ink);margin:0 0 6px;font-weight:620}
+.method ul{margin:0 0 8px;padding-left:18px}
+.method li{margin:3px 0}
+.method p{margin:6px 0 4px}
+.method b{color:var(--ink);font-weight:600}
+details summary{cursor:pointer;color:var(--ink-2)}
+.banner{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--warning);border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:13px;color:var(--ink-2)}
+.banner b{color:var(--ink)}
+.rankgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:16px 20px}
+.ranktbl h3{font-size:13px;margin:0 0 2px;font-weight:600}
+.ranktbl .tgt{font-size:12px;color:var(--muted);margin-bottom:4px}
+.ranktbl table td,.ranktbl table th{padding:6px 6px;cursor:default}
+.ranktbl td.pos{color:var(--muted);width:22px}
+.ranktbl .ties{font-size:12px;color:var(--muted);margin-top:4px}
+.sechead{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.note-new{font-size:12px;color:var(--ink-2);margin:6px 0 0}
+.pager{display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
+.pager #shown{margin-right:auto}
+.aka{font-size:11px;color:var(--muted);margin-top:1px}
+.legend-line{display:inline-block;width:16px;border-top:2px dashed var(--muted);vertical-align:middle;margin-right:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1 id="title">Alliance activity</h1>
+      <div class="sub" id="subtitle"></div>
+    </div>
+    <div class="controls">
+      <label class="sub" for="weekSel">Week</label>
+      <select id="weekSel"></select>
+      <button class="theme" id="themeBtn" type="button" aria-label="Toggle theme">◐ Theme</button>
+    </div>
+  </header>
+
+  <div class="banner" id="banner" hidden></div>
+
+  <section class="tiles" id="tiles"></section>
+
+  <section class="card">
+    <h2>Alliance trends</h2>
+    <p class="hint" id="evoHint">Weekly alliance totals. Hover a point for details.</p>
+    <div class="multiples" id="multiples"></div>
+  </section>
+
+  <div class="grid2">
+    <section class="card">
+      <h2>Flagged members</h2>
+      <p class="hint">Alerts first, then Watch. Exempt ranks and members who joined during the week are not listed.</p>
+      <div class="flagcount" id="flagcount"></div>
+      <div class="flags" id="flags"></div>
+    </section>
+    <section class="card">
+      <h2>Targets met by activity</h2>
+      <p class="hint">Share of members (excluding exempt and newly arrived) at or above the weekly minimum.</p>
+      <div class="bars" id="bars"></div>
+      <h2 style="margin-top:18px">Left since last week</h2>
+      <div id="departs"></div>
+      <h2 style="margin-top:18px">Joined since last week</h2>
+      <div id="arrivals"></div>
+      <p class="hint" style="margin-top:8px">Members are matched by governor ID, so a name change is never counted as a departure + arrival.</p>
+    </section>
+  </div>
+
+  <section class="card">
+    <h2>Top 5 contributors</h2>
+    <p class="hint">Highest values of the selected week, per tracked activity.</p>
+    <div class="rankgrid" id="top5"></div>
+  </section>
+
+  <section class="card">
+    <h2>Bottom 5</h2>
+    <p class="hint">Lowest values of the selected week, per tracked activity (exempt and newly arrived members excluded). Ties are broken by highest power first.</p>
+    <div class="rankgrid" id="bottom5"></div>
+  </section>
+
+  <section class="card">
+    <h2>All members</h2>
+    <p class="hint">Click a row to see the member's history. Click a header to sort.</p>
+    <div class="controls" style="margin-bottom:10px">
+      <input type="search" id="q" placeholder="Search a name or ID…" aria-label="Search">
+      <select id="fStatus" aria-label="Filter by status"><option value="">All statuses</option></select>
+      <select id="fRank" aria-label="Filter by rank"><option value="">All ranks</option></select>
+      <span class="sub" id="count"></span>
+    </div>
+    <div class="tablewrap"><table id="tbl"><thead></thead><tbody></tbody></table></div>
+    <div class="pager">
+      <span class="sub" id="shown"></span>
+      <label class="sub" for="pageSize">Show</label>
+      <select id="pageSize" aria-label="Number of members shown">
+        <option value="20" selected>20</option><option value="50">50</option><option value="100">100</option><option value="all">All</option>
+      </select>
+    </div>
+  </section>
+
+  <footer id="footer"></footer>
+</div>
+<div class="tip" id="tip"></div>
+
+<script>
+const DATA = {"meta":{"alliance":"ToW","royaume":4113,"genere_le":"09/11/2026 21:01","kpis":[{"key":"tech","libelle":"Alliance tech","objectif":50000,"evalue":true,"poids":0.25},{"key":"aides","libelle":"Alliance helps","objectif":500,"evalue":true,"poids":0.2},{"key":"forts","libelle":"Forts destroyed","objectif":80,"evalue":true,"poids":0.35},{"key":"construction","libelle":"Alliance building (s)","objectif":0,"evalue":false,"poids":0.0}],"regles":{"plafond_score":1.5,"inactivite_jours":3,"alerte_si_kpis_manques":2,"alerte_si_semaines_consecutives":2,"baisse_forte_pct":50,"rangs_exemptes":["R5"],"pas_de_flag_semaine_arrivee":true},"journal":["Week ending 2026-11-15: Alliance_6a31d3d4e026d3f1ca2dff93_activity_20261109_194850.xlsx skipped (replaced by newer Alliance_6a31d3d4e026d3f1ca2dff93_activity_20261109_195827.csv).","Week ending 2026-11-15: Alliance_6a31d3d4e026d3f1ca2dff93_activity_20261109_195827.csv (136 members, snapshot Mon 2026-11-09 19:58).","Roster: 85 member(s) without a rank in roster.csv."]},"membres":{"cols":["semaine","governor_id","pseudo","rang","statut","raisons","score","kpis_manques","semaines_consecutives_ko","jours_sans_connexion","nouveau","puissance","puissance_evol","kills_evol","note","anciens_pseudos","tech_semaine","tech_objectif","aides_semaine","aides_objectif","forts_semaine","forts_objectif","construction_semaine","construction_objectif"],"rows":[["2026-11-15",214812353,"ᵀᵂOlper","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",15.2,3,1,0.1,true,20868105,null,null,"rank to fill in","",13900.0,50000.0,75.0,500.0,5.0,80.0,0.0,0.0],["2026-11-15",224590726,"ᵀᵂFangYuan","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",22.9,3,1,0.0,true,30250659,null,null,"rank to fill in","",11400.0,50000.0,118.0,500.0,18.0,80.0,17463.0,0.0],["2026-11-15",224810328,"ᵀᵂKen","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",25.0,3,1,0.4,true,33057805,null,null,"rank to fill in","",9800.0,50000.0,159.0,500.0,20.0,80.0,18456.0,0.0],["2026-11-15",225024901,"ᴮᶻBIG MANGO","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",7.3,3,1,0.2,true,31159602,null,null,"rank to fill in","",7500.0,50000.0,31.0,500.0,2.0,80.0,20000.0,0.0],["2026-11-15",225067813,"ᵀᵂRaphael","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",13.1,3,1,0.0,true,28228732,null,null,"rank to fill in","",13300.0,50000.0,96.0,500.0,0.0,80.0,0.0,0.0],["2026-11-15",225448183,"BLAck Nerro","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",26.3,3,1,0.0,true,29334387,null,null,"rank to fill in","",10700.0,50000.0,152.0,500.0,22.0,80.0,0.0,0.0],["2026-11-15",225595392,"ᵀᵂZubleSs","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",26.5,3,1,0.0,true,23357829,null,null,"rank to fill in","",11000.0,50000.0,119.0,500.0,25.0,80.0,20000.0,0.0],["2026-11-15",225622041,"ᵀᵂAshu x 13","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",27.9,3,1,0.2,true,44981150,null,null,"rank to fill in","",9300.0,50000.0,147.0,500.0,27.0,80.0,0.0,0.0],["2026-11-15",225737683,"ᵀᵂ TOMMY","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",24.8,3,1,0.0,true,29618821,null,null,"rank to fill in","",9000.0,50000.0,274.0,500.0,10.0,80.0,20000.0,0.0],["2026-11-15",225745088,"么MonoLoco","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",19.7,3,1,0.2,true,35635915,null,null,"rank to fill in","",9800.0,50000.0,130.0,500.0,13.0,80.0,20000.0,0.0],["2026-11-15",225753290,"么VALE94","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",11.8,3,1,0.2,true,24709474,null,null,"rank to fill in","",8800.0,50000.0,28.0,500.0,9.0,80.0,0.0,0.0],["2026-11-15",225754449,"ˢʰkilla dawg","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",11.9,3,1,0.0,true,23474031,null,null,"rank to fill in","",4700.0,50000.0,37.0,500.0,13.0,80.0,0.0,0.0],["2026-11-15",225800063,"BombF2P","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",29.4,3,1,0.0,true,22823078,null,null,"rank to fill in","",12400.0,50000.0,204.0,500.0,21.0,80.0,0.0,0.0],["2026-11-15",225803495,"ᴴᴾSkitt T","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",22.5,3,1,0.2,true,26065671,null,null,"rank to fill in","",13700.0,50000.0,82.0,500.0,18.0,80.0,0.0,0.0],["2026-11-15",225857019,"ᵀᵂMoon","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",18.5,3,1,0.2,true,24256442,null,null,"rank to fill in","",7100.0,50000.0,128.0,500.0,14.0,80.0,0.0,0.0],["2026-11-15",225918381,"ᵀᵂ Nymeria","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",21.3,3,1,0.4,true,30930366,null,null,"rank to fill in","",10900.0,50000.0,71.0,500.0,20.0,80.0,20000.0,0.0],["2026-11-15",226155566,"么Destroyer","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",29.0,3,1,0.2,true,19804448,null,null,"rank to fill in","",4800.0,50000.0,346.0,500.0,16.0,80.0,15259.0,0.0],["2026-11-15",226168749,"ᵀᵂ Hunter","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",16.3,3,1,0.2,true,32903639,null,null,"rank to fill in","",5700.0,50000.0,90.0,500.0,15.0,80.0,20000.0,0.0],["2026-11-15",226215876,"ᵗʷMontemezzo","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",20.2,3,1,0.1,true,27539647,null,null,"rank to fill in","",10500.0,50000.0,65.0,500.0,19.0,80.0,0.0,0.0],["2026-11-15",226217244,"ƁaɓaYaga","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",21.0,3,1,0.1,true,24928342,null,null,"rank to fill in","",11300.0,50000.0,268.0,500.0,1.0,80.0,20000.0,0.0],["2026-11-15",226218937,"ᵀᵂHuiwen","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",16.8,3,1,0.3,true,27496754,null,null,"rank to fill in","",8000.0,50000.0,83.0,500.0,14.0,80.0,18133.0,0.0],["2026-11-15",226226926,"BaLkaN Methods","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",32.4,3,1,0.1,true,26167571,null,null,"rank to fill in","",14700.0,50000.0,148.0,500.0,29.0,80.0,18414.0,0.0],["2026-11-15",226230851,"CrYing","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",16.6,3,1,0.0,true,45885894,null,null,"rank to fill in","",3700.0,50000.0,110.0,500.0,16.0,80.0,9288.0,0.0],["2026-11-15",226243824,"ᵀᵂKAYA","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",36.7,3,1,0.1,true,26409264,null,null,"rank to fill in","",13100.0,50000.0,254.0,500.0,29.0,80.0,20000.0,0.0],["2026-11-15",226247880,"Mechuuu only","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",4.2,3,1,0.6,true,22483590,null,null,"rank to fill in","",5600.0,50000.0,14.0,500.0,0.0,80.0,4916.0,0.0],["2026-11-15",226261426,"ᴴᴾhoebagnz","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",19.8,3,1,0.0,true,43181627,null,null,"rank to fill in","",6800.0,50000.0,60.0,500.0,23.0,80.0,0.0,0.0],["2026-11-15",226261744,"The Nut Tickler","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",31.6,3,1,0.0,true,23926207,null,null,"rank to fill in","",10500.0,50000.0,227.0,500.0,25.0,80.0,26824.0,0.0],["2026-11-15",226268971,"UllrX","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",39.2,3,1,0.0,true,34461019,null,null,"rank to fill in","",6100.0,50000.0,445.0,500.0,24.0,80.0,5813.0,0.0],["2026-11-15",226272794,"么Elprofesor","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",23.7,3,1,0.1,true,30303318,null,null,"rank to fill in","",10900.0,50000.0,109.0,500.0,21.0,80.0,20000.0,0.0],["2026-11-15",226277093,"ᴱᴱ MAKIMA","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",8.1,3,1,0.0,true,29778166,null,null,"rank to fill in","",0.0,50000.0,97.0,500.0,6.0,80.0,0.0,0.0],["2026-11-15",226277248,"ᴷKingFuryツ","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",32.4,3,1,0.2,true,25339801,null,null,"rank to fill in","",8500.0,50000.0,302.0,500.0,22.0,80.0,20000.0,0.0],["2026-11-15",226282742,"ᵀᵂ Adam","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",16.2,3,1,0.3,true,25774954,null,null,"rank to fill in","",8700.0,50000.0,84.0,500.0,12.0,80.0,3886.0,0.0],["2026-11-15",226291768,"NellO","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",29.4,3,1,0.0,true,54168057,null,null,"rank to fill in","",12500.0,50000.0,213.0,500.0,20.0,80.0,0.0,0.0],["2026-11-15",226562537,"MOUSA313","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",25.0,3,1,0.1,true,31561593,null,null,"rank to fill in","",11500.0,50000.0,83.0,500.0,25.0,80.0,20000.0,0.0],["2026-11-15",227204868,"Apple meow","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",8.2,3,1,0.3,true,30957670,null,null,"rank to fill in","",8300.0,50000.0,28.0,500.0,3.0,80.0,0.0,0.0],["2026-11-15",227206791,"ᵀᵂSLAYEREYE","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",23.6,3,1,0.4,true,30255703,null,null,"rank to fill in","",8100.0,50000.0,43.0,500.0,30.0,80.0,0.0,0.0],["2026-11-15",227435314,"Apollo Zoldyck","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",8.7,3,1,0.5,true,25117360,null,null,"rank to fill in","",7500.0,50000.0,15.0,500.0,6.0,80.0,0.0,0.0],["2026-11-15",227948021,"SpGames マ","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",9.7,3,1,0.2,true,26729709,null,null,"rank to fill in","",10100.0,50000.0,13.0,500.0,5.0,80.0,0.0,0.0],["2026-11-15",228041181,"ᵛʰ BBLAurel","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",10.0,3,1,0.1,true,30461919,null,null,"rank to fill in","",5400.0,50000.0,13.0,500.0,11.0,80.0,0.0,0.0],["2026-11-15",228043040,"ᵀᵂ Loki メ","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",3.1,3,1,1.0,true,26827695,null,null,"rank to fill in","",4500.0,50000.0,6.0,500.0,0.0,80.0,0.0,0.0],["2026-11-15",228043619,"ᵃᵖ Mr Papsy","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",8.5,3,1,0.0,true,24488712,null,null,"rank to fill in","",10100.0,50000.0,43.0,500.0,0.0,80.0,0.0,0.0],["2026-11-15",228088970,"ᵀᵂ Chaos AD","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",7.4,3,1,0.2,true,57901366,null,null,"rank to fill in","",3100.0,50000.0,33.0,500.0,7.0,80.0,0.0,0.0],["2026-11-15",228117387,"ᵀᵂIapetos","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",25.2,3,1,0.0,true,23805570,null,null,"rank to fill in","",11900.0,50000.0,192.0,500.0,15.0,80.0,0.0,0.0],["2026-11-15",228128705,"ᵀᵂArtozz514","?","Alert","Below target: Alliance tech, Forts destroyed",44.9,2,1,0.0,true,30389735,null,null,"rank to fill in","",11900.0,50000.0,775.0,500.0,0.0,80.0,16648.0,0.0],["2026-11-15",228145201,"ᵀᵂdroif","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",14.6,3,1,0.0,true,24948584,null,null,"rank to fill in","",11700.0,50000.0,47.0,500.0,9.0,80.0,0.0,0.0],["2026-11-15",228456038,"ᵀᵂNeoZz","R4","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",30.3,3,1,0.0,true,61807201,null,null,"rank from legacy sheet — to check","",8700.0,50000.0,420.0,500.0,7.0,80.0,5483.0,0.0],["2026-11-15",228456052,"ᵀᵂ ASSASIN","R3","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",43.0,3,1,0.0,true,22951951,null,null,"rank from legacy sheet — to check","",9300.0,50000.0,132.0,500.0,56.0,80.0,0.0,0.0],["2026-11-15",228456183,"ᵀᵂAsthenia","R3","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",3.8,3,1,0.3,true,24128660,null,null,"rank from legacy sheet — to check","",5900.0,50000.0,2.0,500.0,0.0,80.0,0.0,0.0],["2026-11-15",228456207,"ᵀᵂ PapyTH","R3","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",8.4,3,1,0.2,true,24303993,null,null,"rank from legacy sheet — to check","",8600.0,50000.0,16.0,500.0,4.0,80.0,0.0,0.0],["2026-11-15",228456268,"ᵀᵂ Happy","R4","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",15.0,3,1,0.2,true,27533947,null,null,"rank from legacy sheet — to check","",4900.0,50000.0,174.0,500.0,6.0,80.0,0.0,0.0],["2026-11-15",228456284,"GrosKailoux","R4","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",17.4,3,1,0.1,true,31414142,null,null,"rank from legacy sheet — to check","",9700.0,50000.0,107.0,500.0,11.0,80.0,0.0,0.0],["2026-11-15",228456333,"ᵀᵂGrimSven","R5","Exempt","Below target: Alliance tech, Alliance helps, Forts destroyed",25.1,3,1,0.1,true,25170417,null,null,"rank from legacy sheet — to check","",9600.0,50000.0,316.0,500.0,6.0,80.0,20000.0,0.0],["2026-11-15",228456382,"ᵀᵂ Ysnl","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",16.4,3,1,0.0,true,17130053,null,null,"rank to fill in","",2900.0,50000.0,41.0,500.0,23.0,80.0,0.0,0.0],["2026-11-15",228456831,"SuntzuPrimer","R3","Alert","Below target: Alliance tech, Alliance helps",69.2,2,1,0.0,true,23560015,null,null,"rank from legacy sheet — to check","",9200.0,50000.0,296.0,500.0,89.0,80.0,20000.0,0.0],["2026-11-15",228457256,"NamTD","R3","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",18.2,3,1,0.0,true,22619959,null,null,"rank from legacy sheet — to check","",13000.0,50000.0,49.0,500.0,14.0,80.0,4122.0,0.0],["2026-11-15",228457294,"Bot prime","R3","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",53.8,3,1,0.0,true,29589522,null,null,"rank from legacy sheet — to check","",11400.0,50000.0,168.0,500.0,70.0,80.0,20000.0,0.0],["2026-11-15",228457486,"VITAxL","R3","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",0.3,3,1,0.6,true,22096772,null,null,"rank from legacy sheet — to check","",0.0,50000.0,6.0,500.0,0.0,80.0,0.0,0.0],["2026-11-15",228457908,"ᵀᵂ Autumn","R3","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",10.8,3,1,0.1,true,25869073,null,null,"rank from legacy sheet — to check","",11000.0,50000.0,34.0,500.0,4.0,80.0,0.0,0.0],["2026-11-15",228458662,"ᵀᵂQuỳnh","R3","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",9.8,3,1,0.3,true,25612377,null,null,"rank from legacy sheet — to check","",2800.0,50000.0,19.0,500.0,13.0,80.0,0.0,0.0],["2026-11-15",228459164,"ᵀᵂ金Kosty","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",30.6,3,1,0.2,true,27236312,null,null,"rank to fill in","",12200.0,50000.0,186.0,500.0,25.0,80.0,0.0,0.0],["2026-11-15",228461504,"ᵀᵂ RaVeN7","R3","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",10.8,3,1,0.0,true,27309070,null,null,"rank from legacy sheet — to check","",10900.0,50000.0,80.0,500.0,0.0,80.0,0.0,0.0],["2026-11-15",228461788,"ᵀᵂ ZAROK","R3","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",5.6,3,1,0.1,true,23541238,null,null,"rank from legacy sheet — to check","",5300.0,50000.0,12.0,500.0,3.0,80.0,0.0,0.0],["2026-11-15",228461990,"ᵀᵂGHOST","R3","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",15.0,3,1,0.2,true,18476821,null,null,"rank from legacy sheet — to check","",10900.0,50000.0,76.0,500.0,8.0,80.0,20000.0,0.0],["2026-11-15",228462708,"ᵀᵂFatViking","R3","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",26.4,3,1,0.1,true,66141959,null,null,"rank from legacy sheet — to check","",10200.0,50000.0,193.0,500.0,19.0,80.0,20000.0,0.0],["2026-11-15",228463819,"Kroki Vn","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",19.1,3,1,0.3,true,30454583,null,null,"rank to fill in","",7300.0,50000.0,39.0,500.0,23.0,80.0,0.0,0.0],["2026-11-15",228466191,"ᵀᵂshw36","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",15.1,3,1,0.2,true,17490416,null,null,"rank to fill in","",9300.0,50000.0,66.0,500.0,11.0,80.0,0.0,0.0],["2026-11-15",228469326,"26ᵀ々 BEAST","R3","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",3.5,3,1,0.1,true,72798616,null,null,"rank from legacy sheet — to check","",0.0,50000.0,70.0,500.0,0.0,80.0,0.0,0.0],["2026-11-15",228473147,"DonGeorgeᵀᵂ","R3","Alert","Below target: Alliance tech, Forts destroyed",45.2,2,1,0.2,true,25216121,null,null,"rank from legacy sheet — to check","",8200.0,50000.0,517.0,500.0,26.0,80.0,20000.0,0.0],["2026-11-15",228474425,"ᴸᴸLão Lão","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",42.0,3,1,0.0,true,21174231,null,null,"rank to fill in","",12700.0,50000.0,134.0,500.0,50.0,80.0,20000.0,0.0],["2026-11-15",228475199,"ᵀᵂFeuerson","R4","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",23.3,3,1,0.0,true,34124287,null,null,"rank from legacy sheet — to check","",11300.0,50000.0,106.0,500.0,20.0,80.0,0.0,0.0],["2026-11-15",228479355,"5ive  6  7","R3","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",9.0,3,1,0.5,true,20343055,null,null,"rank from legacy sheet — to check","",8000.0,50000.0,15.0,500.0,6.0,80.0,0.0,0.0],["2026-11-15",228482016,"ᵀᵂZean","R3","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",5.4,3,1,0.1,true,17225625,null,null,"rank from legacy sheet — to check","",6500.0,50000.0,26.0,500.0,0.0,80.0,0.0,0.0],["2026-11-15",228486353,"kyatruong","R3","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",13.2,3,1,0.0,true,27598747,null,null,"rank from legacy sheet — to check","",9500.0,50000.0,146.0,500.0,0.0,80.0,0.0,0.0],["2026-11-15",228493332,"ʄʀɛʏʝǟ","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",21.0,3,1,0.4,true,31126063,null,null,"rank to fill in","",6900.0,50000.0,169.0,500.0,15.0,80.0,0.0,0.0],["2026-11-15",228501248,"El Slymer","R3","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",7.3,3,1,0.6,true,24291675,null,null,"rank from legacy sheet — to check","",5000.0,50000.0,28.0,500.0,5.0,80.0,20000.0,0.0],["2026-11-15",228521891,"ᵀᵂQUYKP","R3","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",4.8,3,1,0.0,true,21134994,null,null,"rank from legacy sheet — to check","",5200.0,50000.0,31.0,500.0,0.0,80.0,0.0,0.0],["2026-11-15",228522211,"SonionPrime","R3","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",17.8,3,1,0.0,true,22948835,null,null,"rank from legacy sheet — to check","",10500.0,50000.0,115.0,500.0,10.0,80.0,0.0,0.0],["2026-11-15",228540127,"LENBV","R3","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",12.3,3,1,0.0,true,21712723,null,null,"rank from legacy sheet — to check","",12300.0,50000.0,92.0,500.0,0.0,80.0,0.0,0.0],["2026-11-15",228544322,"ᵀᵂRimuru","R3","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",11.0,3,1,0.4,true,22066142,null,null,"rank from legacy sheet — to check","",6700.0,50000.0,15.0,500.0,11.0,80.0,0.0,0.0],["2026-11-15",228551546,"Cruor AlpTekin","R3","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",13.7,3,1,0.1,true,28575084,null,null,"rank from legacy sheet — to check","",9000.0,50000.0,162.0,500.0,0.0,80.0,0.0,0.0],["2026-11-15",228553268,"ᵀᵂGHIGHI","R3","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",9.7,3,1,0.4,true,27558357,null,null,"rank from legacy sheet — to check","",8500.0,50000.0,11.0,500.0,7.0,80.0,0.0,0.0],["2026-11-15",228556542,"S1R Crocodile","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",19.7,3,1,0.0,true,18024390,null,null,"rank to fill in","",10000.0,50000.0,50.0,500.0,20.0,80.0,0.0,0.0],["2026-11-15",228635363,"ᵀᵂ BRK 80","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",25.3,3,1,0.0,true,26853676,null,null,"rank to fill in","",10900.0,50000.0,238.0,500.0,12.0,80.0,20000.0,0.0],["2026-11-15",228658796,"ᵀw Stinkytoes","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",34.3,3,1,0.0,true,26354453,null,null,"rank to fill in","",12200.0,50000.0,314.0,500.0,20.0,80.0,40000.0,0.0],["2026-11-15",228675697,"ᵀᵂ天Rokan","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",8.4,3,1,0.0,true,15119184,null,null,"rank to fill in","",7700.0,50000.0,7.0,500.0,6.0,80.0,0.0,0.0],["2026-11-15",228678875,"ᵀᵂgia linh","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",17.2,3,1,0.0,true,25293896,null,null,"rank to fill in","",16300.0,50000.0,64.0,500.0,7.0,80.0,0.0,0.0],["2026-11-15",228722604,"GovGizo","R3","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",24.1,3,1,0.4,true,20980995,null,null,"rank from legacy sheet — to check","",8600.0,50000.0,255.0,500.0,11.0,80.0,0.0,0.0],["2026-11-15",228732184,"Savage79Life","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",11.4,3,1,0.3,true,19462334,null,null,"rank to fill in","",5900.0,50000.0,56.0,500.0,9.0,80.0,6257.0,0.0],["2026-11-15",228738236,"PetrickMoon","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",23.6,3,1,0.3,true,15448906,null,null,"rank to fill in","",12200.0,50000.0,58.0,500.0,24.0,80.0,20000.0,0.0],["2026-11-15",228760049,"Ladiee","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",20.9,3,1,0.0,true,18627763,null,null,"rank to fill in","",10900.0,50000.0,107.0,500.0,16.0,80.0,6633.0,0.0],["2026-11-15",228783556,"ᴳᵀKaLkito","R3","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",30.0,3,1,0.2,true,24327165,null,null,"rank from legacy sheet — to check","",9000.0,50000.0,160.0,500.0,30.0,80.0,0.0,0.0],["2026-11-15",228787001,"Muunin","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",31.9,3,1,0.0,true,17326351,null,null,"rank to fill in","",4600.0,50000.0,100.0,500.0,44.0,80.0,0.0,0.0],["2026-11-15",228891363,"Ga nez ツ","R3","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",20.5,3,1,0.0,true,26177451,null,null,"rank from legacy sheet — to check","",12400.0,50000.0,223.0,500.0,3.0,80.0,20000.0,0.0],["2026-11-15",228891433,"ᵀᵂOtsuki","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",10.1,3,1,0.0,true,19562287,null,null,"rank to fill in","",3300.0,50000.0,40.0,500.0,11.0,80.0,0.0,0.0],["2026-11-15",228891501,"AIHoDaNCe","R3","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",28.5,3,1,0.3,true,24635309,null,null,"rank from legacy sheet — to check","",11200.0,50000.0,168.0,500.0,24.0,80.0,0.0,0.0],["2026-11-15",228891560,"SunnYz ツ","R3","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",3.4,3,1,0.5,true,30789459,null,null,"rank from legacy sheet — to check","",5000.0,50000.0,5.0,500.0,0.0,80.0,0.0,0.0],["2026-11-15",228891948,"ᵀᵂ BJNIG ツ","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",11.7,3,1,0.1,true,20909593,null,null,"rank to fill in","",10900.0,50000.0,97.0,500.0,0.0,80.0,0.0,0.0],["2026-11-15",228891949,"ᵀᵂNeKoBaga","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",32.0,3,1,0.0,true,25377170,null,null,"rank to fill in","",14000.0,50000.0,158.0,500.0,28.0,80.0,0.0,0.0],["2026-11-15",228891959,"ᵀᵂ tatar","R3","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",42.1,3,1,0.0,true,32980480,null,null,"rank from legacy sheet — to check","",14300.0,50000.0,357.0,500.0,28.0,80.0,17896.0,0.0],["2026-11-15",228891982,"DENY ツ","R3","Alert","Below target: Alliance tech, Forts destroyed",48.3,2,1,0.5,true,19548064,null,null,"rank from legacy sheet — to check","",4200.0,50000.0,779.0,500.0,15.0,80.0,8039.0,0.0],["2026-11-15",228891991,"ᵀᵂPPPOOO50","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",3.1,3,1,0.5,true,23857558,null,null,"rank to fill in","",3100.0,50000.0,1.0,500.0,2.0,80.0,0.0,0.0],["2026-11-15",228892025,"Ф sillymaиッ","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",15.2,3,1,0.0,true,23484180,null,null,"rank to fill in","",17300.0,50000.0,87.0,500.0,0.0,80.0,0.0,0.0],["2026-11-15",228892092,"KingdomFly","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",9.9,3,1,0.0,true,25330479,null,null,"rank to fill in","",7500.0,50000.0,49.0,500.0,5.0,80.0,0.0,0.0],["2026-11-15",228892331,"GaTui3","R3","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",5.5,3,1,0.0,true,26031104,null,null,"rank from legacy sheet — to check","",5300.0,50000.0,43.0,500.0,0.0,80.0,0.0,0.0],["2026-11-15",228892439,"Tyraelツ","R3","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",25.6,3,1,0.0,true,34102328,null,null,"rank from legacy sheet — to check","",10000.0,50000.0,70.0,500.0,29.0,80.0,0.0,0.0],["2026-11-15",228892468,"ᵀᵂLemon","R3","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",7.6,3,1,0.4,true,28282048,null,null,"rank from legacy sheet — to check","",8000.0,50000.0,51.0,500.0,0.0,80.0,0.0,0.0],["2026-11-15",228893163,"ᵀᵂ Kabigon","R3","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",18.6,3,1,0.0,true,25920200,null,null,"rank from legacy sheet — to check","",9000.0,50000.0,29.0,500.0,21.0,80.0,0.0,0.0],["2026-11-15",228893382,"ᵀᵂNongNee","R3","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",11.2,3,1,0.6,true,20639989,null,null,"rank from legacy sheet — to check","",3100.0,50000.0,21.0,500.0,15.0,80.0,0.0,0.0],["2026-11-15",228893682,"Dofa ҉  Fenrir","?","Alert","Below target: Alliance tech, Forts destroyed",45.2,2,1,0.5,true,24740526,null,null,"rank to fill in","",11700.0,50000.0,549.0,500.0,19.0,80.0,12164.0,0.0],["2026-11-15",228893825,"ᵀᵂLabrador","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",35.5,3,1,0.0,true,22885355,null,null,"rank to fill in","",12300.0,50000.0,294.0,500.0,24.0,80.0,0.0,0.0],["2026-11-15",228894347,"ᵀᵂPublo","R3","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",37.6,3,1,0.0,true,33234833,null,null,"rank from legacy sheet — to check","",10300.0,50000.0,372.0,500.0,23.0,80.0,5495.0,0.0],["2026-11-15",228895230,"ᵀᵂAksorn","R3","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",12.5,3,1,0.6,true,20742995,null,null,"rank from legacy sheet — to check","",4500.0,50000.0,29.0,500.0,15.0,80.0,0.0,0.0],["2026-11-15",228895564,"Lucien Winter","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",6.2,3,1,0.1,true,22594317,null,null,"rank to fill in","",9300.0,50000.0,7.0,500.0,0.0,80.0,0.0,0.0],["2026-11-15",228895654,"LoneWolf ツ xXx","R3","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",26.9,3,1,0.6,true,29737392,null,null,"rank from legacy sheet — to check","",4400.0,50000.0,319.0,500.0,15.0,80.0,0.0,0.0],["2026-11-15",228896022,"ᵀᵂ SEASON ツ","R3","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",11.1,3,1,0.3,true,30556066,null,null,"rank from legacy sheet — to check","",9300.0,50000.0,30.0,500.0,7.0,80.0,0.0,0.0],["2026-11-15",228897862,"JackHards","R3","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",24.5,3,1,0.5,true,26812465,null,null,"rank from legacy sheet — to check","",8100.0,50000.0,269.0,500.0,11.0,80.0,0.0,0.0],["2026-11-15",228898131,"Jonus le Fou","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",18.7,3,1,0.0,true,20016839,null,null,"rank to fill in","",8400.0,50000.0,39.0,500.0,21.0,80.0,0.0,0.0],["2026-11-15",228910832,"ᴿˣJ IRON Man","R3","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",24.6,3,1,0.4,true,25781911,null,null,"rank from legacy sheet — to check","",7700.0,50000.0,133.0,500.0,24.0,80.0,0.0,0.0],["2026-11-15",228929789,"Black乂Back","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",26.4,3,1,0.0,true,23278711,null,null,"rank to fill in","",11400.0,50000.0,177.0,500.0,19.0,80.0,20000.0,0.0],["2026-11-15",228956152,"DKTR","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",26.3,3,1,0.0,true,16675151,null,null,"rank to fill in","",7000.0,50000.0,176.0,500.0,24.0,80.0,0.0,0.0],["2026-11-15",228957711,"ᵀᵂFenixz","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",41.9,3,1,0.2,true,22380148,null,null,"rank to fill in","",9700.0,50000.0,433.0,500.0,26.0,80.0,20000.0,0.0],["2026-11-15",228971278,"RAGNAROK fenrir","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",14.7,3,1,0.0,true,21509230,null,null,"rank to fill in","",12000.0,50000.0,68.0,500.0,7.0,80.0,0.0,0.0],["2026-11-15",228978658,"ᵀᵂRoyol","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",28.8,3,1,0.0,true,23981791,null,null,"rank to fill in","",9500.0,50000.0,413.0,500.0,4.0,80.0,19029.0,0.0],["2026-11-15",228989523,"ᵀᵂCellat35","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",30.7,3,1,0.1,true,20663965,null,null,"rank to fill in","",11200.0,50000.0,201.0,500.0,25.0,80.0,0.0,0.0],["2026-11-15",229017572,"DarthメVader707","R3","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",29.2,3,1,0.1,true,27360807,null,null,"rank from legacy sheet — to check","",12500.0,50000.0,165.0,500.0,24.0,80.0,13580.0,0.0],["2026-11-15",229033905,"メ A R A B U S メ","R3","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",24.9,3,1,0.1,true,24148292,null,null,"rank from legacy sheet — to check","",10900.0,50000.0,77.0,500.0,26.0,80.0,20000.0,0.0],["2026-11-15",229114983,"duydzquaroi","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",24.4,3,1,0.1,true,17511104,null,null,"rank to fill in","",11300.0,50000.0,84.0,500.0,24.0,80.0,0.0,0.0],["2026-11-15",229175688,"ᵀᵂDABEE","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",16.8,3,1,0.1,true,23619725,null,null,"rank to fill in","",15400.0,50000.0,55.0,500.0,8.0,80.0,4744.0,0.0],["2026-11-15",229175812,"ᵀᵂDeath义","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",12.8,3,1,0.0,true,17532924,null,null,"rank to fill in","",5800.0,50000.0,96.0,500.0,8.0,80.0,0.0,0.0],["2026-11-15",229176552,"ᵀᵂ Rafa","R3","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",9.5,3,1,0.0,true,33489699,null,null,"rank from legacy sheet — to check","",4700.0,50000.0,110.0,500.0,2.0,80.0,13709.0,0.0],["2026-11-15",229179707,"OrchidDreamz","?","Alert","Below target: Alliance tech, Forts destroyed",54.0,2,1,1.0,true,23335486,null,null,"rank to fill in","",10700.0,50000.0,1212.0,500.0,18.0,80.0,20000.0,0.0],["2026-11-15",229362837,"ᵀᵂRendich","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",8.0,3,1,0.0,true,16133991,null,null,"rank to fill in","",10800.0,50000.0,14.0,500.0,1.0,80.0,0.0,0.0],["2026-11-15",229636570,"ᵀᵂCRUSADER","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",10.3,3,1,0.3,true,17886941,null,null,"rank to fill in","",9100.0,50000.0,26.0,500.0,6.0,80.0,0.0,0.0],["2026-11-15",229665862,"ᵀᵂHoove","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",8.8,3,1,0.0,true,15571435,null,null,"rank to fill in","",8600.0,50000.0,46.0,500.0,2.0,80.0,19450.0,0.0],["2026-11-15",229696685,"ᵀᵂSteveJobs","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",25.6,3,1,0.2,true,21563510,null,null,"rank to fill in","",8600.0,50000.0,110.0,500.0,27.0,80.0,20000.0,0.0],["2026-11-15",229701244,"DOBERMАN","?","Alert","Below target: Alliance tech, Alliance helps, Forts destroyed",15.1,3,1,0.0,true,23386548,null,null,"rank to fill in","",13400.0,50000.0,68.0,500.0,6.0,80.0,0.0,0.0]]},"semaines":{"cols":["semaine","membres","export_le","semaine_partielle","arrivees","departs","tech_total","tech_mediane","tech_pct_ok","aides_total","aides_mediane","aides_pct_ok","forts_total","forts_mediane","forts_pct_ok","construction_total","construction_mediane","puissance_totale","pct_tous_objectifs","score_median","n_ok","n_watch","n_alert","n_exempt","n_new"],"rows":[["2026-11-15",136,"2026-11-09",true,0,0,1217700.0,9300.0,0.0,19285.0,91.0,3.7,1978.0,13.0,0.7,871701.0,0.0,3637661986,0.0,18.65,0,0,135,1,0]]}};
+
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s);
+const nf = new Intl.NumberFormat('en-US');
+const fmt = v => v == null ? '–' : (Math.abs(v) >= 1e6 ? (v/1e6).toLocaleString('en-US',{maximumFractionDigits:1})+'M' : nf.format(Math.round(v)));
+const fmtFull = v => v == null ? '–' : nf.format(Math.round(v));
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const parts = s => s.slice(0,10).split('-').map(Number);
+const fmtDate = s => { const [y,m,d] = parts(s); return `${d} ${MONTHS[m-1]} ${y}`; };
+const shortDate = s => { const [y,m,d] = parts(s); return `${d} ${MONTHS[m-1]}`; };
+const dayName = s => { const [y,m,d] = parts(s); return DAYS[new Date(Date.UTC(y,m-1,d)).getUTCDay()]; };
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const toObjs = t => t.rows.map(r => Object.fromEntries(t.cols.map((c,i)=>[c,r[i]])));
+const STATUS = {'OK':'s-ok','Watch':'s-warn','Alert':'s-crit','Exempt':'s-ex','New':'s-new'};
+const NOT_EVALUATED = new Set(['Exempt','New']);
+const statusHTML = s => `<span class="status ${STATUS[s]||''}"><i></i>${esc(s)}</span>`;
+const tgtOf = k => typeof k.objectif === 'object' ? k.objectif.defaut : k.objectif;
+
+const meta = DATA.meta, KPIS = meta.kpis;
+const members = toObjs(DATA.membres);
+const weeks = toObjs(DATA.semaines);
+const weekList = weeks.map(w => w.semaine);
+let curWeek = weekList[weekList.length-1];
+
+/* ---------- theme toggle ---------- */
+(() => {
+  let saved = null; try { saved = localStorage.getItem('tow-theme'); } catch(e){}
+  if (saved) document.documentElement.dataset.theme = saved;
+  $('#themeBtn').onclick = () => {
+    const dark = getComputedStyle(document.documentElement).colorScheme === 'dark';
+    const next = dark ? 'light' : 'dark';
+    document.documentElement.dataset.theme = next;
+    try { localStorage.setItem('tow-theme', next); } catch(e){}
+  };
+})();
+
+/* ---------- tooltip ---------- */
+const tip = $('#tip');
+function showTip(html, ev){
+  tip.innerHTML = html; tip.style.display = 'block';
+  const pad = 12, w = tip.offsetWidth, h = tip.offsetHeight;
+  let x = ev.pageX + pad, y = ev.pageY - h - pad;
+  if (x + w > window.scrollX + document.documentElement.clientWidth - 8) x = ev.pageX - w - pad;
+  if (y < window.scrollY + 4) y = ev.pageY + pad;
+  tip.style.left = x+'px'; tip.style.top = y+'px';
+}
+const hideTip = () => tip.style.display = 'none';
+
+/* ---------- line chart (single series, one axis) ---------- */
+function lineChart(el, labels, values, {height=130, target=null, unit=''}={}){
+  const W = Math.max(el.clientWidth, 220), H = height, m = {l:44, r:10, t:10, b:22};
+  const iw = W-m.l-m.r, ih = H-m.t-m.b;
+  const vals = values.filter(v => v != null);
+  let max = niceMax(Math.max(...vals, target||0, 1)), min = 0;
+  const n = labels.length;
+  const x = i => m.l + (n === 1 ? iw/2 : i*iw/(n-1));
+  const y = v => m.t + ih - (v-min)/(max-min)*ih;
+  let s = `<svg width="${W}" height="${H}" role="img" aria-label="${esc(el.dataset.label||'')}">`;
+  [0, max/2, max].forEach(t => s += `<line x1="${m.l}" x2="${W-m.r}" y1="${y(t)}" y2="${y(t)}" stroke="var(--grid)" stroke-width="1"/>
+    <text x="${m.l-6}" y="${y(t)+4}" text-anchor="end">${fmt(t)}</text>`);
+  s += `<line x1="${m.l}" x2="${W-m.r}" y1="${y(0)}" y2="${y(0)}" stroke="var(--axis)"/>`;
+  const step = Math.ceil(n/6);
+  labels.forEach((l,i) => { if (i % step === 0 || i === n-1) {
+    const anchor = n === 1 ? 'middle' : i === 0 ? 'start' : i === n-1 ? 'end' : 'middle';
+    s += `<text x="${x(i)}" y="${H-6}" text-anchor="${anchor}">${shortDate(l)}</text>`; } });
+  if (target) s += `<line x1="${m.l}" x2="${W-m.r}" y1="${y(target)}" y2="${y(target)}" stroke="var(--muted)" stroke-dasharray="4 3" stroke-width="1.5"/>`;
+  let d = '', pen = false;
+  values.forEach((v,i) => { if (v == null) { pen = false; return; } d += (pen?'L':'M')+x(i)+','+y(v); pen = true; });
+  s += `<path d="${d}" fill="none" stroke="var(--series-1)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  values.forEach((v,i) => { if (v != null) s += `<circle cx="${x(i)}" cy="${y(v)}" r="${n===1?5:3.5}" fill="var(--series-1)" stroke="var(--surface)" stroke-width="2"/>`; });
+  s += `<line class="xh" x1="0" x2="0" y1="${m.t}" y2="${m.t+ih}" stroke="var(--axis)" stroke-width="1" style="display:none"/>`;
+  s += `<rect x="${m.l}" y="0" width="${iw}" height="${H}" fill="transparent"/></svg>`;
+  el.innerHTML = s;
+  const svg = el.querySelector('svg'), xh = svg.querySelector('.xh');
+  svg.addEventListener('mousemove', ev => {
+    const r = svg.getBoundingClientRect(), px = ev.clientX - r.left;
+    let i = n === 1 ? 0 : Math.round((px - m.l) / (iw/(n-1))); i = Math.max(0, Math.min(n-1, i));
+    xh.setAttribute('x1', x(i)); xh.setAttribute('x2', x(i)); xh.style.display = '';
+    showTip(`<b>Week ending ${fmtDate(labels[i])}</b><br>${values[i]==null?'–':fmtFull(values[i])+unit}${target?`<br><span style="color:var(--muted)">Target: ${fmtFull(target)}</span>`:''}`, ev);
+  });
+  svg.addEventListener('mouseleave', () => { xh.style.display='none'; hideTip(); });
+}
+function niceMax(v){ const p = Math.pow(10, Math.floor(Math.log10(v))); const f = v/p; return (f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10)*p; }
+
+/* ---------- header / week selector ---------- */
+$('#title').textContent = `${meta.alliance} · Alliance activity`;
+$('#subtitle').textContent = `Kingdom ${meta.royaume} · ${weekList.length} week(s) of history · generated ${meta.genere_le}`;
+weekList.slice().reverse().forEach(w => $('#weekSel').insertAdjacentHTML('beforeend', `<option value="${w}">Week ending ${fmtDate(w)}</option>`));
+$('#weekSel').onchange = e => { curWeek = e.target.value; renderWeek(); };
+
+function renderBanner(){
+  const w = weeks[weekList.indexOf(curWeek)];
+  const b = $('#banner');
+  if (w.semaine_partielle) {
+    b.innerHTML = `<b>Week in progress.</b> Snapshot taken on ${dayName(w.export_le)} ${fmtDate(w.export_le)}: figures only cover part of the week (Mon → Sun ${fmtDate(w.semaine)}), so flags are not final. Sunday's export will replace it.`;
+    b.hidden = false;
+  } else b.hidden = true;
+}
+
+/* ---------- tiles ---------- */
+function renderTiles(){
+  const i = weekList.indexOf(curWeek), w = weeks[i], p = weeks[i-1];
+  const delta = (a,b,suf='') => b == null ? 'first tracked week' : `${a-b>=0?'+':''}${(Math.round((a-b)*10)/10).toLocaleString('en-US')}${suf} vs previous week`;
+  const tiles = [
+    ['Members', w.membres, p ? `+${w.arrivees} joined · −${w.departs} left` : 'first tracked week'],
+    ['All targets met', (w.pct_tous_objectifs ?? 0).toLocaleString('en-US')+'%', delta(w.pct_tous_objectifs, p?.pct_tous_objectifs, ' pts')],
+    ['Alert', w.n_alert, delta(w.n_alert, p?.n_alert)],
+    ['Watch', w.n_watch, delta(w.n_watch, p?.n_watch)],
+    ['Median score', Math.round(w.score_median ?? 0), '100 = targets exactly met'],
+  ];
+  $('#tiles').innerHTML = tiles.map(([l,v,d]) => `<div class="tile"><div class="lbl">${l}</div><div class="val">${v}</div><div class="delta">${d}</div></div>`).join('');
+}
+
+/* ---------- small multiples ---------- */
+function renderMultiples(){
+  const specs = [
+    ...KPIS.map(k => ({label:`${k.libelle} — total`, key:`${k.key}_total`})),
+    {label:'% members meeting all targets', key:'pct_tous_objectifs', unit:'%'},
+    {label:'Members', key:'membres'},
+    {label:'Total power', key:'puissance_totale'},
+  ];
+  $('#evoHint').textContent = weekList.length < 2
+    ? 'Only one week so far: the trend lines will build up week after week.'
+    : 'Weekly alliance totals. Hover a point for details.';
+  $('#multiples').innerHTML = specs.map((s,i) => {
+    const last = weeks[weeks.length-1][s.key];
+    return `<div class="mini"><h3>${esc(s.label)}</h3><div class="now">Latest week: ${fmtFull(last)}${s.unit||''}</div><div class="chart" id="mc${i}" data-label="${esc(s.label)}"></div></div>`;
+  }).join('');
+  specs.forEach((s,i) => lineChart($('#mc'+i), weekList, weeks.map(w => w[s.key]), {unit:s.unit||''}));
+}
+
+/* ---------- flags ---------- */
+function renderFlags(rows){
+  const order = {'Alert':0,'Watch':1};
+  const f = rows.filter(r => r.statut in order).sort((a,b) => order[a.statut]-order[b.statut] || (a.score??0)-(b.score??0));
+  const na = f.filter(r => r.statut === 'Alert').length;
+  $('#flagcount').textContent = f.length ? `${na} alert · ${f.length-na} watch (sorted by lowest score)` : '';
+  $('#flags').innerHTML = f.length ? f.map(r => `<div class="flag">
+      <div><span class="name">${esc(r.pseudo)}</span><span class="tag">${esc(r.rang)}</span>${akaHTML(r)}</div>
+      <div class="reasons">${esc(r.raisons)}</div>
+      <div>${statusHTML(r.statut)}</div></div>`).join('') : '<div class="empty">No flagged member this week.</div>';
+}
+
+/* ---------- bars ---------- */
+function renderBars(rows){
+  const ev = rows.filter(r => !NOT_EVALUATED.has(r.statut));
+  const items = KPIS.filter(k => k.evalue).map(k => {
+    const ok = ev.filter(r => (r[k.key+'_semaine']??0) >= (r[k.key+'_objectif']??0)).length;
+    return {k, pct: ev.length ? 100*ok/ev.length : 0, ok, n: ev.length};
+  });
+  $('#bars').innerHTML = items.map(it => `<div class="bar" data-tip="<b>${esc(it.k.libelle)}</b><br>${it.ok} / ${it.n} members ≥ ${fmtFull(tgtOf(it.k))}">
+      <div>${esc(it.k.libelle)}</div><div class="track"><div class="fill" style="width:${it.pct}%"></div></div><div class="pct">${Math.round(it.pct)}%</div></div>`).join('')
+    || '<div class="empty">No target defined in config.yaml.</div>';
+  document.querySelectorAll('.bar').forEach(b => { b.onmousemove = ev => showTip(b.dataset.tip, ev); b.onmouseleave = hideTip; });
+}
+
+/* arrivals / departures: compared by governor ID, never by name */
+function renderMovements(){
+  const i = weekList.indexOf(curWeek);
+  if (i === 0) {
+    $('#departs').innerHTML = $('#arrivals').innerHTML = '<div class="empty">First tracked week: no previous week to compare with.</div>';
+    return;
+  }
+  const prev = members.filter(m => m.semaine === weekList[i-1]);
+  const cur = members.filter(m => m.semaine === curWeek);
+  const prevIds = new Set(prev.map(m => m.governor_id)), curIds = new Set(cur.map(m => m.governor_id));
+  const list = (rows, empty) => rows.length
+    ? `<div class="reasons">${rows.sort((a,b) => (b.puissance??0)-(a.puissance??0)).map(d => `<span title="ID ${d.governor_id} · Power ${fmt(d.puissance)}">${esc(d.pseudo)}</span> <span class="tag">${esc(d.rang)}</span>`).join(' · ')}</div>`
+    : `<div class="empty">${empty}</div>`;
+  $('#departs').innerHTML = list(prev.filter(m => !curIds.has(m.governor_id)), 'No departure detected.');
+  const arrived = cur.filter(m => !prevIds.has(m.governor_id));
+  $('#arrivals').innerHTML = list(arrived, 'No arrival detected.')
+    + (arrived.length ? '<p class="note-new"><i>No flags raised this week for newly arrived members — they are evaluated from their first full week.</i></p>' : '');
+}
+const akaHTML = m => m.anciens_pseudos ? `<div class="aka">aka ${esc(m.anciens_pseudos)}</div>` : '';
+
+/* ---------- top / bottom 5 ---------- */
+function rankTables(el, rows, dir){
+  el.innerHTML = KPIS.map(k => {
+    const key = k.key+'_semaine', t = tgtOf(k);
+    const pool = rows.filter(r => r[key] != null && (dir > 0 || !NOT_EVALUATED.has(r.statut)));
+    const sorted = pool.slice().sort((a,b) => dir*(b[key]-a[key]) || (dir > 0 ? (b.score??0)-(a.score??0) : (b.puissance??0)-(a.puissance??0)));
+    const five = sorted.slice(0,5);
+    const last = five.length ? five[five.length-1][key] : null;
+    const tied = sorted.slice(5).filter(r => r[key] === last).length;
+    const body = five.map((r,i) => {
+      const miss = k.evalue && t > 0 && r[key] < (r[k.key+'_objectif'] ?? t);
+      return `<tr><td class="pos">${i+1}</td><td><span class="name">${esc(r.pseudo)}</span><span class="tag">${esc(r.rang)}</span></td><td class="num${miss?' miss':''}">${fmtFull(r[key])}</td></tr>`;
+    }).join('');
+    return `<div class="ranktbl"><h3>${esc(k.libelle)}</h3>
+      <div class="tgt">${k.evalue && t > 0 ? `Weekly target: ${fmtFull(t)}` : 'No weekly target'}</div>
+      <table><thead><tr><th scope="col">#</th><th scope="col">Member</th><th scope="col" class="num">Value</th></tr></thead><tbody>${body || '<tr><td colspan="3" class="empty">No data</td></tr>'}</tbody></table>
+      ${tied ? `<div class="ties">+${tied} other member(s) tied at ${fmtFull(last)}</div>` : ''}</div>`;
+  }).join('');
+}
+
+/* ---------- table ---------- */
+const COLS = [
+  {k:'pseudo', l:'Member'}, {k:'rang', l:'Rank'}, {k:'statut', l:'Status'},
+  {k:'score', l:'Score', num:true},
+  ...KPIS.map(k => ({k:k.key+'_semaine', l:k.libelle, num:true, kpi:k})),
+  {k:'puissance', l:'Power', num:true}, {k:'puissance_evol', l:'Δ Power', num:true},
+  {k:'semaines_consecutives_ko', l:'Weeks below', num:true}, {k:'jours_sans_connexion', l:'Last login (days)', num:true},
+];
+let sort = {k:'score', dir:1}, openId = null;
+$('#tbl thead').innerHTML = '<tr>' + COLS.map(c => `<th data-k="${c.k}" class="${c.num?'num':''}" scope="col">${esc(c.l)}</th>`).join('') + '</tr>';
+document.querySelectorAll('#tbl th').forEach(th => th.onclick = () => {
+  const k = th.dataset.k; sort = {k, dir: sort.k === k ? -sort.dir : (COLS.find(c=>c.k===k).num ? -1 : 1)}; renderTable();
+});
+['Alert','Watch','OK','New','Exempt'].forEach(s => $('#fStatus').insertAdjacentHTML('beforeend', `<option>${s}</option>`));
+[...new Set(members.map(m => m.rang))].sort().forEach(r => $('#fRank').insertAdjacentHTML('beforeend', `<option>${esc(r)}</option>`));
+['#q','#fStatus','#fRank','#pageSize'].forEach(s => $(s).oninput = renderTable);
+
+function renderTable(){
+  const q = $('#q').value.trim().toLowerCase(), fs = $('#fStatus').value, fr = $('#fRank').value;
+  let rows = members.filter(m => m.semaine === curWeek)
+    .filter(m => !q || m.pseudo.toLowerCase().includes(q) || String(m.governor_id).includes(q))
+    .filter(m => !fs || m.statut === fs).filter(m => !fr || m.rang === fr);
+  rows.sort((a,b) => { const x=a[sort.k], y=b[sort.k];
+    if (x==null) return 1; if (y==null) return -1;
+    return (typeof x === 'string' ? x.localeCompare(y,'en') : x-y) * sort.dir; });
+  document.querySelectorAll('#tbl th').forEach(th => th.setAttribute('aria-sort', th.dataset.k===sort.k ? (sort.dir>0?'ascending':'descending') : 'none'));
+  $('#count').textContent = `${rows.length} member(s)`;
+  const ps = $('#pageSize').value, total = rows.length;
+  if (ps !== 'all') rows = rows.slice(0, Number(ps));
+  $('#shown').textContent = total ? `Showing ${rows.length} of ${total}` : '';
+  $('#tbl tbody').innerHTML = rows.map(m => {
+    const cells = COLS.map(c => {
+      if (c.k === 'pseudo') return `<td><span class="name">${esc(m.pseudo)}</span>${m.nouveau && weekList.indexOf(curWeek)>0 ? '<span class="tag">new</span>':''}${akaHTML(m)}</td>`;
+      if (c.k === 'statut') return `<td>${statusHTML(m.statut)}</td>`;
+      if (c.k === 'rang') return `<td>${esc(m.rang)}</td>`;
+      const v = m[c.k];
+      const miss = c.kpi && c.kpi.evalue && (m[c.kpi.key+'_objectif']??0) > 0 && (v??0) < m[c.kpi.key+'_objectif'];
+      const txt = c.k==='puissance_evol' && v!=null ? (v>=0?'+':'')+fmt(v) : (c.k==='score'||c.k==='jours_sans_connexion') ? (v==null?'–':nf.format(v)) : fmt(v);
+      return `<td class="num${miss?' miss':''}" ${miss?`title="Target: ${fmtFull(m[c.kpi.key+'_objectif'])}"`:''}>${txt}</td>`;
+    }).join('');
+    const detail = openId === m.governor_id ? `<tr class="detail"><td colspan="${COLS.length}">${detailHTML(m)}</td></tr>` : '';
+    return `<tr class="row" data-id="${m.governor_id}" aria-expanded="${openId===m.governor_id}">${cells}</tr>${detail}`;
+  }).join('') || `<tr><td colspan="${COLS.length}" class="empty">No matching member.</td></tr>`;
+  document.querySelectorAll('#tbl tr.row').forEach(tr => tr.onclick = () => {
+    const id = Number(tr.dataset.id); openId = openId === id ? null : id; renderTable();
+  });
+  if (openId != null) drawDetail(openId);
+}
+
+function detailHTML(m){
+  const w = Math.max(240, $('.tablewrap').clientWidth - 30);
+  return `<div style="position:sticky;left:14px;width:${w}px"><div class="sub" style="margin-bottom:8px">ID ${m.governor_id}${m.anciens_pseudos?` · Former names: ${esc(m.anciens_pseudos)}`:''}${m.note?` · Note: ${esc(m.note)}`:''}${m.raisons?` · ${esc(m.raisons)}`:''}</div>
+    <div class="multiples" id="det"></div>
+    <div class="hint" style="margin-top:6px"><span class="legend-line"></span>weekly target</div></div>`;
+}
+function drawDetail(id){
+  const hist = members.filter(m => m.governor_id === id).sort((a,b) => a.semaine.localeCompare(b.semaine));
+  const labels = hist.map(h => h.semaine);
+  const specs = [{l:'Score (100 = targets met)', k:'score', target:100},
+    ...KPIS.map(k => ({l:k.libelle, k:k.key+'_semaine', target: hist[hist.length-1][k.key+'_objectif'] || null}))];
+  const det = $('#det'); if (!det) return;
+  det.innerHTML = specs.map((s,i) => `<div class="mini"><h3>${esc(s.l)}</h3><div class="chart" id="dc${i}" data-label="${esc(s.l)}"></div></div>`).join('');
+  specs.forEach((s,i) => lineChart($('#dc'+i), labels, hist.map(h => h[s.k]), {height:110, target:s.target}));
+}
+
+/* ---------- footer ---------- */
+function renderFooter(){
+  const R = meta.regles, cap = Math.round(R.plafond_score*100);
+  const tgtTxt = k => typeof k.objectif==='object' ? esc(JSON.stringify(k.objectif)) : fmtFull(k.objectif);
+  const scored = KPIS.filter(k => k.evalue && k.poids > 0);
+  const wsum = scored.reduce((a,k) => a + k.poids, 0) || 1;
+  const pct = v => (Math.round(v*1000)/10).toLocaleString('en-US') + '%';
+  const li = a => '<ul>' + a.map(x => `<li>${x}</li>`).join('') + '</ul>';
+  $('#footer').innerHTML = `
+    <div class="method">
+      <section>
+        <h3>Weekly targets</h3>
+        ${li(KPIS.map(k => `${esc(k.libelle)}: ${k.evalue ? '<b>'+tgtTxt(k)+'</b>' : 'tracked, no target'}`))}
+        <p>Weeks run Monday → Sunday. Members are matched by governor ID, so name changes keep their history.</p>
+      </section>
+      <section>
+        <h3>Score methodology</h3>
+        ${li([
+          `For each activity: <b>value ÷ weekly target</b>, capped at <b>${cap}%</b> (overachieving one activity cannot hide a missed one).`,
+          `Weighted average of the activities: ${scored.map(k => `${esc(k.libelle)} <b>${pct(k.poids/wsum)}</b>`).join(' · ')}.`,
+          ...KPIS.filter(k => !scored.includes(k)).map(k => `${esc(k.libelle)} has no target, so it is shown but not scored.`),
+          `<b>100</b> = every target exactly met · <b>${cap}</b> = maximum · <b>0</b> = no activity.`,
+          `The score is absolute (based on targets, not on other players), so weeks can be compared with each other.`,
+          `The score ranks and tracks members; flags are based on the targets themselves (see Statuses).`,
+        ])}
+      </section>
+      <section>
+        <h3>Statuses</h3>
+        <p>${statusHTML('Alert')} — any one of:</p>
+        ${li([
+          `inactive for more than <b>${R.inactivite_jours} days</b>`,
+          `<b>${R.alerte_si_kpis_manques}+ targets</b> missed in the week`,
+          `<b>${R.alerte_si_semaines_consecutives}+ weeks in a row</b> with at least one target missed`,
+        ])}
+        <p>${statusHTML('Watch')} — no Alert condition, but one of:</p>
+        ${li([
+          `<b>1 target</b> missed (first time)`,
+          `score below <b>${100-R.baisse_forte_pct}%</b> of the member's own 4-week average (sharp drop)`,
+        ])}
+        <p>Never flagged:</p>
+        ${li([
+          ...(R.pas_de_flag_semaine_arrivee!==false ? [`${statusHTML('New')} joined during the week — evaluated from their first full week`] : []),
+          `${statusHTML('Exempt')} rank ${(R.rangs_exemptes||[]).join(', ')||'—'} or temporary exemption (e.g. vacation)`,
+        ])}
+        <p>Priority: New → Exempt → Alert → Watch → OK.</p>
+      </section>
+    </div>
+    <details><summary>Processing log</summary><ul>${meta.journal.map(l => `<li>${esc(l)}</li>`).join('')}</ul></details>`;
+}
+
+function renderWeek(){
+  const rows = members.filter(m => m.semaine === curWeek);
+  renderBanner(); renderTiles(); renderFlags(rows); renderBars(rows); renderMovements();
+  rankTables($('#top5'), rows, 1); rankTables($('#bottom5'), rows, -1);
+  renderTable();
+}
+renderMultiples(); renderWeek(); renderFooter();
+let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { renderMultiples(); if (openId!=null) drawDetail(openId); }, 150); });
+</script>
+</body>
+</html>

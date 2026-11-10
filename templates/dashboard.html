@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>ToW Activity</title>
+<style>
+:root{
+  color-scheme:light;
+  --page:#f9f9f7; --surface:#fcfcfb; --surface-2:#f3f2ee;
+  --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781;
+  --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,.10);
+  --series-1:#2a78d6; --series-1-soft:#cde2fb;
+  --good:#0ca30c; --good-text:#006300; --warning:#fab219; --warning-text:#8a5a00; --critical:#d03b3b; --critical-text:#b02a2a;
+  --neutral:#898781;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --page:#0d0d0d; --surface:#1a1a19; --surface-2:#232321;
+    --ink:#f0efec; --ink-2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.10);
+    --series-1:#3987e5; --series-1-soft:#184f95;
+    --good-text:#0ca30c; --warning-text:#fab219; --critical-text:#e66767;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --page:#0d0d0d; --surface:#1a1a19; --surface-2:#232321;
+  --ink:#f0efec; --ink-2:#c3c2b7; --muted:#898781;
+  --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.10);
+  --series-1:#3987e5; --series-1-soft:#184f95;
+  --good-text:#0ca30c; --warning-text:#fab219; --critical-text:#e66767;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1200px;margin:0 auto;padding:20px 16px 48px}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;justify-content:space-between;margin-bottom:18px}
+h1{font-size:22px;margin:0;font-weight:650;letter-spacing:-.01em}
+.sub{color:var(--ink-2);font-size:13px}
+h2{font-size:15px;margin:0 0 4px;font-weight:620}
+.hint{color:var(--muted);font-size:12px;margin:0 0 12px}
+.controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+select,input[type=search]{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px 10px;min-height:34px}
+button.theme{font:inherit;background:var(--surface);color:var(--ink-2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer;min-height:34px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px;min-width:0}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px}
+.tile{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+.tile .lbl{color:var(--ink-2);font-size:12px}
+.tile .val{font-size:28px;font-weight:650;margin-top:2px;font-variant-numeric:tabular-nums}
+.tile .delta{font-size:12px;color:var(--muted);margin-top:2px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:16px}
+.multiples{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:16px 20px}
+.mini h3{font-size:13px;margin:0 0 2px;font-weight:600}
+.mini .now{font-size:12px;color:var(--ink-2);margin-bottom:4px;font-variant-numeric:tabular-nums}
+svg text{fill:var(--muted);font-size:11px}
+.chart{position:relative}
+.tip{position:absolute;pointer-events:none;background:var(--surface);color:var(--ink);border:1px solid var(--border);border-radius:8px;padding:6px 9px;font-size:12px;box-shadow:0 4px 14px rgba(0,0,0,.12);white-space:nowrap;display:none;z-index:5;font-variant-numeric:tabular-nums}
+.tip b{font-weight:600}
+.status{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:550;white-space:nowrap}
+.status i{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none}
+.s-ok{color:var(--good-text)} .s-ok i{background:var(--good)}
+.s-warn{color:var(--warning-text)} .s-warn i{background:var(--warning)}
+.s-crit{color:var(--critical-text)} .s-crit i{background:var(--critical)}
+.s-ex{color:var(--ink-2)} .s-ex i{background:var(--neutral)}
+.s-new{color:var(--ink-2)} .s-new i{background:transparent;border:2px solid var(--series-1);width:9px;height:9px;box-sizing:border-box}
+.tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--grid);vertical-align:top}
+th{font-size:12px;color:var(--ink-2);font-weight:600;cursor:pointer;user-select:none;white-space:nowrap;position:sticky;top:0;background:var(--surface)}
+th.num,td.num{text-align:right}
+th[aria-sort=ascending]::after{content:" ▲";font-size:9px}
+th[aria-sort=descending]::after{content:" ▼";font-size:9px}
+tbody tr.row{cursor:pointer}
+tbody tr.row:hover{background:var(--surface-2)}
+td.miss{color:var(--critical-text);font-weight:600}
+td.miss::before{content:"✕ ";font-size:10px}
+.name{font-weight:550}
+.tag{display:inline-block;font-size:11px;color:var(--ink-2);border:1px solid var(--border);border-radius:5px;padding:0 5px;margin-left:5px}
+.reasons{color:var(--ink-2);font-size:12px}
+.flags{display:grid;gap:0;max-height:460px;overflow-y:auto;padding-right:6px}
+.flagcount{font-size:12px;color:var(--ink-2);margin:-4px 0 8px}
+.flag{display:grid;grid-template-columns:minmax(120px,190px) 1fr auto;gap:10px;align-items:start;padding:9px 0;border-bottom:1px solid var(--grid)}
+.flag:last-child{border-bottom:0}
+@media (max-width:600px){.flag{grid-template-columns:1fr}}
+.bars .bar{display:grid;grid-template-columns:minmax(110px,170px) 1fr 52px;gap:10px;align-items:center;margin:8px 0}
+.bars .track{height:14px;background:var(--surface-2);border-radius:4px;position:relative;overflow:hidden}
+.bars .fill{height:100%;background:var(--series-1);border-radius:0 4px 4px 0}
+.bars .pct{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.detail td{background:var(--surface-2);padding:14px}
+.empty{color:var(--muted);font-style:italic;padding:8px 0}
+footer{color:var(--ink-2);font-size:12px;margin-top:24px}
+.method{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:12px 28px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px}
+.method h3{font-size:13px;color:var(--ink);margin:0 0 6px;font-weight:620}
+.method ul{margin:0 0 8px;padding-left:18px}
+.method li{margin:3px 0}
+.method p{margin:6px 0 4px}
+.method b{color:var(--ink);font-weight:600}
+details summary{cursor:pointer;color:var(--ink-2)}
+.banner{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--warning);border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:13px;color:var(--ink-2)}
+.banner b{color:var(--ink)}
+.rankgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:16px 20px}
+.ranktbl h3{font-size:13px;margin:0 0 2px;font-weight:600}
+.ranktbl .tgt{font-size:12px;color:var(--muted);margin-bottom:4px}
+.ranktbl table td,.ranktbl table th{padding:6px 6px;cursor:default}
+.ranktbl td.pos{color:var(--muted);width:22px}
+.ranktbl .ties{font-size:12px;color:var(--muted);margin-top:4px}
+.sechead{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.note-new{font-size:12px;color:var(--ink-2);margin:6px 0 0}
+.pager{display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
+.pager #shown{margin-right:auto}
+.aka{font-size:11px;color:var(--muted);margin-top:1px}
+.legend-line{display:inline-block;width:16px;border-top:2px dashed var(--muted);vertical-align:middle;margin-right:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1 id="title">Alliance activity</h1>
+      <div class="sub" id="subtitle"></div>
+    </div>
+    <div class="controls">
+      <label class="sub" for="weekSel">Week</label>
+      <select id="weekSel"></select>
+      <button class="theme" id="themeBtn" type="button" aria-label="Toggle theme">◐ Theme</button>
+    </div>
+  </header>
+
+  <div class="banner" id="banner" hidden></div>
+
+  <section class="tiles" id="tiles"></section>
+
+  <section class="card">
+    <h2>Alliance trends</h2>
+    <p class="hint" id="evoHint">Weekly alliance totals. Hover a point for details.</p>
+    <div class="multiples" id="multiples"></div>
+  </section>
+
+  <div class="grid2">
+    <section class="card">
+      <h2>Flagged members</h2>
+      <p class="hint">Alerts first, then Watch. Exempt ranks and members who joined during the week are not listed.</p>
+      <div class="flagcount" id="flagcount"></div>
+      <div class="flags" id="flags"></div>
+    </section>
+    <section class="card">
+      <h2>Targets met by activity</h2>
+      <p class="hint">Share of members (excluding exempt and newly arrived) at or above the weekly minimum.</p>
+      <div class="bars" id="bars"></div>
+      <h2 style="margin-top:18px">Left since last week</h2>
+      <div id="departs"></div>
+      <h2 style="margin-top:18px">Joined since last week</h2>
+      <div id="arrivals"></div>
+      <p class="hint" style="margin-top:8px">Members are matched by governor ID, so a name change is never counted as a departure + arrival.</p>
+    </section>
+  </div>
+
+  <section class="card">
+    <h2>Top 5 contributors</h2>
+    <p class="hint">Highest values of the selected week, per tracked activity.</p>
+    <div class="rankgrid" id="top5"></div>
+  </section>
+
+  <section class="card">
+    <h2>Bottom 5</h2>
+    <p class="hint">Lowest values of the selected week, per tracked activity (exempt and newly arrived members excluded). Ties are broken by highest power first.</p>
+    <div class="rankgrid" id="bottom5"></div>
+  </section>
+
+  <section class="card">
+    <h2>All members</h2>
+    <p class="hint">Click a row to see the member's history. Click a header to sort.</p>
+    <div class="controls" style="margin-bottom:10px">
+      <input type="search" id="q" placeholder="Search a name or ID…" aria-label="Search">
+      <select id="fStatus" aria-label="Filter by status"><option value="">All statuses</option></select>
+      <select id="fRank" aria-label="Filter by rank"><option value="">All ranks</option></select>
+      <span class="sub" id="count"></span>
+    </div>
+    <div class="tablewrap"><table id="tbl"><thead></thead><tbody></tbody></table></div>
+    <div class="pager">
+      <span class="sub" id="shown"></span>
+      <label class="sub" for="pageSize">Show</label>
+      <select id="pageSize" aria-label="Number of members shown">
+        <option value="20" selected>20</option><option value="50">50</option><option value="100">100</option><option value="all">All</option>
+      </select>
+    </div>
+  </section>
+
+  <footer id="footer"></footer>
+</div>
+<div class="tip" id="tip"></div>
+
+<script>
+const DATA = /*__DATA__*/null;
+
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s);
+const nf = new Intl.NumberFormat('en-US');
+const fmt = v => v == null ? '–' : (Math.abs(v) >= 1e6 ? (v/1e6).toLocaleString('en-US',{maximumFractionDigits:1})+'M' : nf.format(Math.round(v)));
+const fmtFull = v => v == null ? '–' : nf.format(Math.round(v));
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const parts = s => s.slice(0,10).split('-').map(Number);
+const fmtDate = s => { const [y,m,d] = parts(s); return `${d} ${MONTHS[m-1]} ${y}`; };
+const shortDate = s => { const [y,m,d] = parts(s); return `${d} ${MONTHS[m-1]}`; };
+const dayName = s => { const [y,m,d] = parts(s); return DAYS[new Date(Date.UTC(y,m-1,d)).getUTCDay()]; };
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const toObjs = t => t.rows.map(r => Object.fromEntries(t.cols.map((c,i)=>[c,r[i]])));
+const STATUS = {'OK':'s-ok','Watch':'s-warn','Alert':'s-crit','Exempt':'s-ex','New':'s-new'};
+const NOT_EVALUATED = new Set(['Exempt','New']);
+const statusHTML = s => `<span class="status ${STATUS[s]||''}"><i></i>${esc(s)}</span>`;
+const tgtOf = k => typeof k.objectif === 'object' ? k.objectif.defaut : k.objectif;
+
+const meta = DATA.meta, KPIS = meta.kpis;
+const members = toObjs(DATA.membres);
+const weeks = toObjs(DATA.semaines);
+const weekList = weeks.map(w => w.semaine);
+let curWeek = weekList[weekList.length-1];
+
+/* ---------- theme toggle ---------- */
+(() => {
+  let saved = null; try { saved = localStorage.getItem('tow-theme'); } catch(e){}
+  if (saved) document.documentElement.dataset.theme = saved;
+  $('#themeBtn').onclick = () => {
+    const dark = getComputedStyle(document.documentElement).colorScheme === 'dark';
+    const next = dark ? 'light' : 'dark';
+    document.documentElement.dataset.theme = next;
+    try { localStorage.setItem('tow-theme', next); } catch(e){}
+  };
+})();
+
+/* ---------- tooltip ---------- */
+const tip = $('#tip');
+function showTip(html, ev){
+  tip.innerHTML = html; tip.style.display = 'block';
+  const pad = 12, w = tip.offsetWidth, h = tip.offsetHeight;
+  let x = ev.pageX + pad, y = ev.pageY - h - pad;
+  if (x + w > window.scrollX + document.documentElement.clientWidth - 8) x = ev.pageX - w - pad;
+  if (y < window.scrollY + 4) y = ev.pageY + pad;
+  tip.style.left = x+'px'; tip.style.top = y+'px';
+}
+const hideTip = () => tip.style.display = 'none';
+
+/* ---------- line chart (single series, one axis) ---------- */
+function lineChart(el, labels, values, {height=130, target=null, unit=''}={}){
+  const W = Math.max(el.clientWidth, 220), H = height, m = {l:44, r:10, t:10, b:22};
+  const iw = W-m.l-m.r, ih = H-m.t-m.b;
+  const vals = values.filter(v => v != null);
+  let max = niceMax(Math.max(...vals, target||0, 1)), min = 0;
+  const n = labels.length;
+  const x = i => m.l + (n === 1 ? iw/2 : i*iw/(n-1));
+  const y = v => m.t + ih - (v-min)/(max-min)*ih;
+  let s = `<svg width="${W}" height="${H}" role="img" aria-label="${esc(el.dataset.label||'')}">`;
+  [0, max/2, max].forEach(t => s += `<line x1="${m.l}" x2="${W-m.r}" y1="${y(t)}" y2="${y(t)}" stroke="var(--grid)" stroke-width="1"/>
+    <text x="${m.l-6}" y="${y(t)+4}" text-anchor="end">${fmt(t)}</text>`);
+  s += `<line x1="${m.l}" x2="${W-m.r}" y1="${y(0)}" y2="${y(0)}" stroke="var(--axis)"/>`;
+  const step = Math.ceil(n/6);
+  labels.forEach((l,i) => { if (i % step === 0 || i === n-1) {
+    const anchor = n === 1 ? 'middle' : i === 0 ? 'start' : i === n-1 ? 'end' : 'middle';
+    s += `<text x="${x(i)}" y="${H-6}" text-anchor="${anchor}">${shortDate(l)}</text>`; } });
+  if (target) s += `<line x1="${m.l}" x2="${W-m.r}" y1="${y(target)}" y2="${y(target)}" stroke="var(--muted)" stroke-dasharray="4 3" stroke-width="1.5"/>`;
+  let d = '', pen = false;
+  values.forEach((v,i) => { if (v == null) { pen = false; return; } d += (pen?'L':'M')+x(i)+','+y(v); pen = true; });
+  s += `<path d="${d}" fill="none" stroke="var(--series-1)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  values.forEach((v,i) => { if (v != null) s += `<circle cx="${x(i)}" cy="${y(v)}" r="${n===1?5:3.5}" fill="var(--series-1)" stroke="var(--surface)" stroke-width="2"/>`; });
+  s += `<line class="xh" x1="0" x2="0" y1="${m.t}" y2="${m.t+ih}" stroke="var(--axis)" stroke-width="1" style="display:none"/>`;
+  s += `<rect x="${m.l}" y="0" width="${iw}" height="${H}" fill="transparent"/></svg>`;
+  el.innerHTML = s;
+  const svg = el.querySelector('svg'), xh = svg.querySelector('.xh');
+  svg.addEventListener('mousemove', ev => {
+    const r = svg.getBoundingClientRect(), px = ev.clientX - r.left;
+    let i = n === 1 ? 0 : Math.round((px - m.l) / (iw/(n-1))); i = Math.max(0, Math.min(n-1, i));
+    xh.setAttribute('x1', x(i)); xh.setAttribute('x2', x(i)); xh.style.display = '';
+    showTip(`<b>Week ending ${fmtDate(labels[i])}</b><br>${values[i]==null?'–':fmtFull(values[i])+unit}${target?`<br><span style="color:var(--muted)">Target: ${fmtFull(target)}</span>`:''}`, ev);
+  });
+  svg.addEventListener('mouseleave', () => { xh.style.display='none'; hideTip(); });
+}
+function niceMax(v){ const p = Math.pow(10, Math.floor(Math.log10(v))); const f = v/p; return (f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10)*p; }
+
+/* ---------- header / week selector ---------- */
+$('#title').textContent = `${meta.alliance} · Alliance activity`;
+$('#subtitle').textContent = `Kingdom ${meta.royaume} · ${weekList.length} week(s) of history · generated ${meta.genere_le}`;
+weekList.slice().reverse().forEach(w => $('#weekSel').insertAdjacentHTML('beforeend', `<option value="${w}">Week ending ${fmtDate(w)}</option>`));
+$('#weekSel').onchange = e => { curWeek = e.target.value; renderWeek(); };
+
+function renderBanner(){
+  const w = weeks[weekList.indexOf(curWeek)];
+  const b = $('#banner');
+  if (w.semaine_partielle) {
+    b.innerHTML = `<b>Week in progress.</b> Snapshot taken on ${dayName(w.export_le)} ${fmtDate(w.export_le)}: figures only cover part of the week (Mon → Sun ${fmtDate(w.semaine)}), so flags are not final. Sunday's export will replace it.`;
+    b.hidden = false;
+  } else b.hidden = true;
+}
+
+/* ---------- tiles ---------- */
+function renderTiles(){
+  const i = weekList.indexOf(curWeek), w = weeks[i], p = weeks[i-1];
+  const delta = (a,b,suf='') => b == null ? 'first tracked week' : `${a-b>=0?'+':''}${(Math.round((a-b)*10)/10).toLocaleString('en-US')}${suf} vs previous week`;
+  const tiles = [
+    ['Members', w.membres, p ? `+${w.arrivees} joined · −${w.departs} left` : 'first tracked week'],
+    ['All targets met', (w.pct_tous_objectifs ?? 0).toLocaleString('en-US')+'%', delta(w.pct_tous_objectifs, p?.pct_tous_objectifs, ' pts')],
+    ['Alert', w.n_alert, delta(w.n_alert, p?.n_alert)],
+    ['Watch', w.n_watch, delta(w.n_watch, p?.n_watch)],
+    ['Median score', Math.round(w.score_median ?? 0), '100 = targets exactly met'],
+  ];
+  $('#tiles').innerHTML = tiles.map(([l,v,d]) => `<div class="tile"><div class="lbl">${l}</div><div class="val">${v}</div><div class="delta">${d}</div></div>`).join('');
+}
+
+/* ---------- small multiples ---------- */
+function renderMultiples(){
+  const specs = [
+    ...KPIS.map(k => ({label:`${k.libelle} — total`, key:`${k.key}_total`})),
+    {label:'% members meeting all targets', key:'pct_tous_objectifs', unit:'%'},
+    {label:'Members', key:'membres'},
+    {label:'Total power', key:'puissance_totale'},
+  ];
+  $('#evoHint').textContent = weekList.length < 2
+    ? 'Only one week so far: the trend lines will build up week after week.'
+    : 'Weekly alliance totals. Hover a point for details.';
+  $('#multiples').innerHTML = specs.map((s,i) => {
+    const last = weeks[weeks.length-1][s.key];
+    return `<div class="mini"><h3>${esc(s.label)}</h3><div class="now">Latest week: ${fmtFull(last)}${s.unit||''}</div><div class="chart" id="mc${i}" data-label="${esc(s.label)}"></div></div>`;
+  }).join('');
+  specs.forEach((s,i) => lineChart($('#mc'+i), weekList, weeks.map(w => w[s.key]), {unit:s.unit||''}));
+}
+
+/* ---------- flags ---------- */
+function renderFlags(rows){
+  const order = {'Alert':0,'Watch':1};
+  const f = rows.filter(r => r.statut in order).sort((a,b) => order[a.statut]-order[b.statut] || (a.score??0)-(b.score??0));
+  const na = f.filter(r => r.statut === 'Alert').length;
+  $('#flagcount').textContent = f.length ? `${na} alert · ${f.length-na} watch (sorted by lowest score)` : '';
+  $('#flags').innerHTML = f.length ? f.map(r => `<div class="flag">
+      <div><span class="name">${esc(r.pseudo)}</span><span class="tag">${esc(r.rang)}</span>${akaHTML(r)}</div>
+      <div class="reasons">${esc(r.raisons)}</div>
+      <div>${statusHTML(r.statut)}</div></div>`).join('') : '<div class="empty">No flagged member this week.</div>';
+}
+
+/* ---------- bars ---------- */
+function renderBars(rows){
+  const ev = rows.filter(r => !NOT_EVALUATED.has(r.statut));
+  const items = KPIS.filter(k => k.evalue).map(k => {
+    const ok = ev.filter(r => (r[k.key+'_semaine']??0) >= (r[k.key+'_objectif']??0)).length;
+    return {k, pct: ev.length ? 100*ok/ev.length : 0, ok, n: ev.length};
+  });
+  $('#bars').innerHTML = items.map(it => `<div class="bar" data-tip="<b>${esc(it.k.libelle)}</b><br>${it.ok} / ${it.n} members ≥ ${fmtFull(tgtOf(it.k))}">
+      <div>${esc(it.k.libelle)}</div><div class="track"><div class="fill" style="width:${it.pct}%"></div></div><div class="pct">${Math.round(it.pct)}%</div></div>`).join('')
+    || '<div class="empty">No target defined in config.yaml.</div>';
+  document.querySelectorAll('.bar').forEach(b => { b.onmousemove = ev => showTip(b.dataset.tip, ev); b.onmouseleave = hideTip; });
+}
+
+/* arrivals / departures: compared by governor ID, never by name */
+function renderMovements(){
+  const i = weekList.indexOf(curWeek);
+  if (i === 0) {
+    $('#departs').innerHTML = $('#arrivals').innerHTML = '<div class="empty">First tracked week: no previous week to compare with.</div>';
+    return;
+  }
+  const prev = members.filter(m => m.semaine === weekList[i-1]);
+  const cur = members.filter(m => m.semaine === curWeek);
+  const prevIds = new Set(prev.map(m => m.governor_id)), curIds = new Set(cur.map(m => m.governor_id));
+  const list = (rows, empty) => rows.length
+    ? `<div class="reasons">${rows.sort((a,b) => (b.puissance??0)-(a.puissance??0)).map(d => `<span title="ID ${d.governor_id} · Power ${fmt(d.puissance)}">${esc(d.pseudo)}</span> <span class="tag">${esc(d.rang)}</span>`).join(' · ')}</div>`
+    : `<div class="empty">${empty}</div>`;
+  $('#departs').innerHTML = list(prev.filter(m => !curIds.has(m.governor_id)), 'No departure detected.');
+  const arrived = cur.filter(m => !prevIds.has(m.governor_id));
+  $('#arrivals').innerHTML = list(arrived, 'No arrival detected.')
+    + (arrived.length ? '<p class="note-new"><i>No flags raised this week for newly arrived members — they are evaluated from their first full week.</i></p>' : '');
+}
+const akaHTML = m => m.anciens_pseudos ? `<div class="aka">aka ${esc(m.anciens_pseudos)}</div>` : '';
+
+/* ---------- top / bottom 5 ---------- */
+function rankTables(el, rows, dir){
+  el.innerHTML = KPIS.map(k => {
+    const key = k.key+'_semaine', t = tgtOf(k);
+    const pool = rows.filter(r => r[key] != null && (dir > 0 || !NOT_EVALUATED.has(r.statut)));
+    const sorted = pool.slice().sort((a,b) => dir*(b[key]-a[key]) || (dir > 0 ? (b.score??0)-(a.score??0) : (b.puissance??0)-(a.puissance??0)));
+    const five = sorted.slice(0,5);
+    const last = five.length ? five[five.length-1][key] : null;
+    const tied = sorted.slice(5).filter(r => r[key] === last).length;
+    const body = five.map((r,i) => {
+      const miss = k.evalue && t > 0 && r[key] < (r[k.key+'_objectif'] ?? t);
+      return `<tr><td class="pos">${i+1}</td><td><span class="name">${esc(r.pseudo)}</span><span class="tag">${esc(r.rang)}</span></td><td class="num${miss?' miss':''}">${fmtFull(r[key])}</td></tr>`;
+    }).join('');
+    return `<div class="ranktbl"><h3>${esc(k.libelle)}</h3>
+      <div class="tgt">${k.evalue && t > 0 ? `Weekly target: ${fmtFull(t)}` : 'No weekly target'}</div>
+      <table><thead><tr><th scope="col">#</th><th scope="col">Member</th><th scope="col" class="num">Value</th></tr></thead><tbody>${body || '<tr><td colspan="3" class="empty">No data</td></tr>'}</tbody></table>
+      ${tied ? `<div class="ties">+${tied} other member(s) tied at ${fmtFull(last)}</div>` : ''}</div>`;
+  }).join('');
+}
+
+/* ---------- table ---------- */
+const COLS = [
+  {k:'pseudo', l:'Member'}, {k:'rang', l:'Rank'}, {k:'statut', l:'Status'},
+  {k:'score', l:'Score', num:true},
+  ...KPIS.map(k => ({k:k.key+'_semaine', l:k.libelle, num:true, kpi:k})),
+  {k:'puissance', l:'Power', num:true}, {k:'puissance_evol', l:'Δ Power', num:true},
+  {k:'semaines_consecutives_ko', l:'Weeks below', num:true}, {k:'jours_sans_connexion', l:'Last login (days)', num:true},
+];
+let sort = {k:'score', dir:1}, openId = null;
+$('#tbl thead').innerHTML = '<tr>' + COLS.map(c => `<th data-k="${c.k}" class="${c.num?'num':''}" scope="col">${esc(c.l)}</th>`).join('') + '</tr>';
+document.querySelectorAll('#tbl th').forEach(th => th.onclick = () => {
+  const k = th.dataset.k; sort = {k, dir: sort.k === k ? -sort.dir : (COLS.find(c=>c.k===k).num ? -1 : 1)}; renderTable();
+});
+['Alert','Watch','OK','New','Exempt'].forEach(s => $('#fStatus').insertAdjacentHTML('beforeend', `<option>${s}</option>`));
+[...new Set(members.map(m => m.rang))].sort().forEach(r => $('#fRank').insertAdjacentHTML('beforeend', `<option>${esc(r)}</option>`));
+['#q','#fStatus','#fRank','#pageSize'].forEach(s => $(s).oninput = renderTable);
+
+function renderTable(){
+  const q = $('#q').value.trim().toLowerCase(), fs = $('#fStatus').value, fr = $('#fRank').value;
+  let rows = members.filter(m => m.semaine === curWeek)
+    .filter(m => !q || m.pseudo.toLowerCase().includes(q) || String(m.governor_id).includes(q))
+    .filter(m => !fs || m.statut === fs).filter(m => !fr || m.rang === fr);
+  rows.sort((a,b) => { const x=a[sort.k], y=b[sort.k];
+    if (x==null) return 1; if (y==null) return -1;
+    return (typeof x === 'string' ? x.localeCompare(y,'en') : x-y) * sort.dir; });
+  document.querySelectorAll('#tbl th').forEach(th => th.setAttribute('aria-sort', th.dataset.k===sort.k ? (sort.dir>0?'ascending':'descending') : 'none'));
+  $('#count').textContent = `${rows.length} member(s)`;
+  const ps = $('#pageSize').value, total = rows.length;
+  if (ps !== 'all') rows = rows.slice(0, Number(ps));
+  $('#shown').textContent = total ? `Showing ${rows.length} of ${total}` : '';
+  $('#tbl tbody').innerHTML = rows.map(m => {
+    const cells = COLS.map(c => {
+      if (c.k === 'pseudo') return `<td><span class="name">${esc(m.pseudo)}</span>${m.nouveau && weekList.indexOf(curWeek)>0 ? '<span class="tag">new</span>':''}${akaHTML(m)}</td>`;
+      if (c.k === 'statut') return `<td>${statusHTML(m.statut)}</td>`;
+      if (c.k === 'rang') return `<td>${esc(m.rang)}</td>`;
+      const v = m[c.k];
+      const miss = c.kpi && c.kpi.evalue && (m[c.kpi.key+'_objectif']??0) > 0 && (v??0) < m[c.kpi.key+'_objectif'];
+      const txt = c.k==='puissance_evol' && v!=null ? (v>=0?'+':'')+fmt(v) : (c.k==='score'||c.k==='jours_sans_connexion') ? (v==null?'–':nf.format(v)) : fmt(v);
+      return `<td class="num${miss?' miss':''}" ${miss?`title="Target: ${fmtFull(m[c.kpi.key+'_objectif'])}"`:''}>${txt}</td>`;
+    }).join('');
+    const detail = openId === m.governor_id ? `<tr class="detail"><td colspan="${COLS.length}">${detailHTML(m)}</td></tr>` : '';
+    return `<tr class="row" data-id="${m.governor_id}" aria-expanded="${openId===m.governor_id}">${cells}</tr>${detail}`;
+  }).join('') || `<tr><td colspan="${COLS.length}" class="empty">No matching member.</td></tr>`;
+  document.querySelectorAll('#tbl tr.row').forEach(tr => tr.onclick = () => {
+    const id = Number(tr.dataset.id); openId = openId === id ? null : id; renderTable();
+  });
+  if (openId != null) drawDetail(openId);
+}
+
+function detailHTML(m){
+  const w = Math.max(240, $('.tablewrap').clientWidth - 30);
+  return `<div style="position:sticky;left:14px;width:${w}px"><div class="sub" style="margin-bottom:8px">ID ${m.governor_id}${m.anciens_pseudos?` · Former names: ${esc(m.anciens_pseudos)}`:''}${m.note?` · Note: ${esc(m.note)}`:''}${m.raisons?` · ${esc(m.raisons)}`:''}</div>
+    <div class="multiples" id="det"></div>
+    <div class="hint" style="margin-top:6px"><span class="legend-line"></span>weekly target</div></div>`;
+}
+function drawDetail(id){
+  const hist = members.filter(m => m.governor_id === id).sort((a,b) => a.semaine.localeCompare(b.semaine));
+  const labels = hist.map(h => h.semaine);
+  const specs = [{l:'Score (100 = targets met)', k:'score', target:100},
+    ...KPIS.map(k => ({l:k.libelle, k:k.key+'_semaine', target: hist[hist.length-1][k.key+'_objectif'] || null}))];
+  const det = $('#det'); if (!det) return;
+  det.innerHTML = specs.map((s,i) => `<div class="mini"><h3>${esc(s.l)}</h3><div class="chart" id="dc${i}" data-label="${esc(s.l)}"></div></div>`).join('');
+  specs.forEach((s,i) => lineChart($('#dc'+i), labels, hist.map(h => h[s.k]), {height:110, target:s.target}));
+}
+
+/* ---------- footer ---------- */
+function renderFooter(){
+  const R = meta.regles, cap = Math.round(R.plafond_score*100);
+  const tgtTxt = k => typeof k.objectif==='object' ? esc(JSON.stringify(k.objectif)) : fmtFull(k.objectif);
+  const scored = KPIS.filter(k => k.evalue && k.poids > 0);
+  const wsum = scored.reduce((a,k) => a + k.poids, 0) || 1;
+  const pct = v => (Math.round(v*1000)/10).toLocaleString('en-US') + '%';
+  const li = a => '<ul>' + a.map(x => `<li>${x}</li>`).join('') + '</ul>';
+  $('#footer').innerHTML = `
+    <div class="method">
+      <section>
+        <h3>Weekly targets</h3>
+        ${li(KPIS.map(k => `${esc(k.libelle)}: ${k.evalue ? '<b>'+tgtTxt(k)+'</b>' : 'tracked, no target'}`))}
+        <p>Weeks run Monday → Sunday. Members are matched by governor ID, so name changes keep their history.</p>
+      </section>
+      <section>
+        <h3>Score methodology</h3>
+        ${li([
+          `For each activity: <b>value ÷ weekly target</b>, capped at <b>${cap}%</b> (overachieving one activity cannot hide a missed one).`,
+          `Weighted average of the activities: ${scored.map(k => `${esc(k.libelle)} <b>${pct(k.poids/wsum)}</b>`).join(' · ')}.`,
+          ...KPIS.filter(k => !scored.includes(k)).map(k => `${esc(k.libelle)} has no target, so it is shown but not scored.`),
+          `<b>100</b> = every target exactly met · <b>${cap}</b> = maximum · <b>0</b> = no activity.`,
+          `The score is absolute (based on targets, not on other players), so weeks can be compared with each other.`,
+          `The score ranks and tracks members; flags are based on the targets themselves (see Statuses).`,
+        ])}
+      </section>
+      <section>
+        <h3>Statuses</h3>
+        <p>${statusHTML('Alert')} — any one of:</p>
+        ${li([
+          `inactive for more than <b>${R.inactivite_jours} days</b>`,
+          `<b>${R.alerte_si_kpis_manques}+ targets</b> missed in the week`,
+          `<b>${R.alerte_si_semaines_consecutives}+ weeks in a row</b> with at least one target missed`,
+        ])}
+        <p>${statusHTML('Watch')} — no Alert condition, but one of:</p>
+        ${li([
+          `<b>1 target</b> missed (first time)`,
+          `score below <b>${100-R.baisse_forte_pct}%</b> of the member's own 4-week average (sharp drop)`,
+        ])}
+        <p>Never flagged:</p>
+        ${li([
+          ...(R.pas_de_flag_semaine_arrivee!==false ? [`${statusHTML('New')} joined during the week — evaluated from their first full week`] : []),
+          `${statusHTML('Exempt')} rank ${(R.rangs_exemptes||[]).join(', ')||'—'} or temporary exemption (e.g. vacation)`,
+        ])}
+        <p>Priority: New → Exempt → Alert → Watch → OK.</p>
+      </section>
+    </div>
+    <details><summary>Processing log</summary><ul>${meta.journal.map(l => `<li>${esc(l)}</li>`).join('')}</ul></details>`;
+}
+
+function renderWeek(){
+  const rows = members.filter(m => m.semaine === curWeek);
+  renderBanner(); renderTiles(); renderFlags(rows); renderBars(rows); renderMovements();
+  rankTables($('#top5'), rows, 1); rankTables($('#bottom5'), rows, -1);
+  renderTable();
+}
+renderMultiples(); renderWeek(); renderFooter();
+let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { renderMultiples(); if (openId!=null) drawDetail(openId); }, 150); });
+</script>
+</body>
+</html>

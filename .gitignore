@@ -1,0 +1,13 @@
+# Fichiers générés (recréés à chaque exécution)
+output/
+__pycache__/
+*.pyc
+
+# Fichiers de travail à la racine (les exports officiels vivent dans data/raw/)
+/Alliance_*
+/Copie de ToW Activity Sheet*.xlsx
+
+# Fichiers temporaires Office / système
+~$*
+.DS_Store
+Thumbs.db

@@ -1,0 +1,105 @@
+# =====================================================================
+#  CONFIGURATION DU SUIVI D'ACTIVITÉ — ToW (royaume 4113)
+#  C'est LE fichier à modifier pour changer objectifs, poids et règles.
+#  Aucune ligne de Python à toucher pour ça.
+# =====================================================================
+
+alliance: "ToW"
+royaume: 4113
+
+dossiers:
+  exports: "data/raw"        # déposer ici l'export hebdo (csv ou xlsx), sans le renommer
+  sortie: "output"           # dashboard, historique, rapport Excel
+  roster: "roster.csv"       # rangs / exemptions / notes, maintenu à la main
+
+# Colonnes de l'export utilisées comme identifiants
+colonnes:
+  id: "ID"
+  pseudo: "Player"
+  derniere_connexion: "Last login"
+
+# ---------------------------------------------------------------------
+#  KPI ÉVALUÉS (comptent dans le score et les flags)
+#  mode: "hebdo"  -> la valeur de l'export est déjà celle de la semaine
+#        "cumul"  -> la valeur est cumulée : on calcule la différence
+#                    avec la semaine précédente
+#  objectif: minimum par semaine. 0 = KPI affiché mais non évalué.
+#            On peut donner un objectif par rang :
+#              objectif: {defaut: 6000, R4: 8000}
+#  poids: importance dans le score (normalisés automatiquement)
+#
+#  libelle: nom affiché dans le dashboard (EN ANGLAIS : alliance internationale)
+#
+#  Objectifs officiels de l'alliance (fixes dans le temps).
+#  Poids repris du fichier legacy (tech 25 / aides 20 / forts 35).
+# ---------------------------------------------------------------------
+kpis:
+  tech:
+    libelle: "Alliance tech"
+    colonne: "Technology points"
+    mode: "hebdo"
+    objectif: 50000
+    poids: 0.25
+  aides:
+    libelle: "Alliance helps"
+    colonne: "Alliance helps"
+    mode: "hebdo"
+    objectif: 500
+    poids: 0.20
+  forts:
+    libelle: "Forts destroyed"
+    colonne: "Forts destroyed"
+    mode: "hebdo"
+    objectif: 80
+    poids: 0.35
+  construction:
+    libelle: "Alliance building (s)"
+    colonne: "Building time (seconds)"
+    mode: "hebdo"
+    objectif: 0          # pas de minimum : suivi seulement
+    poids: 0
+
+# ---------------------------------------------------------------------
+#  INDICATEURS DE CONTEXTE (affichés, jamais évalués)
+# ---------------------------------------------------------------------
+contexte:
+  puissance:
+    libelle: "Power"
+    colonne: "Power"
+    mode: "cumul"        # on affiche la valeur ET l'évolution vs semaine précédente
+  kills:
+    libelle: "Kill points"
+    colonne: "Kill points"
+    mode: "cumul"        # surtout utile en KvK
+  armurerie:
+    libelle: "Armory points"
+    colonne: "Armory points"
+    mode: "hebdo"
+  activite_outil:
+    libelle: "Activity points (tool)"
+    colonne: "Activity points"
+    mode: "hebdo"
+
+# ---------------------------------------------------------------------
+#  RÈGLES DE FLAG
+# ---------------------------------------------------------------------
+regles:
+  plafond_score: 1.5            # au-delà de 150 % de l'objectif, un KPI ne rapporte plus
+  inactivite_jours: 3           # dernière connexion plus vieille que ça => Alerte
+  alerte_si_kpis_manques: 2     # nb de KPI ratés la même semaine => Alerte
+  alerte_si_semaines_consecutives: 2   # nb de semaines d'affilée avec ≥1 KPI raté => Alerte
+  baisse_forte_pct: 50          # score < 50 % de sa moyenne des 4 semaines précédentes => À surveiller
+  rangs_exemptes: ["R5"]        # jamais flaggés (affichés quand même)
+  pas_de_flag_semaine_arrivee: true   # un membre arrivé en cours de semaine a le statut « New » :
+                                      # pas de flag, exclu des % d'objectifs, évalué dès sa 1re semaine complète
+
+# ---------------------------------------------------------------------
+#  PUBLICATION (GitHub Pages)
+#  À chaque exécution, le dashboard est copié dans docs/index.html puis
+#  envoyé sur GitHub. Lien à partager aux leaders : url ci-dessous.
+# ---------------------------------------------------------------------
+publication:
+  activer: true
+  dossier: "docs"
+  branche: "main"
+  url: "https://arthurgrizon.github.io/ToW-Activity---4113/"
