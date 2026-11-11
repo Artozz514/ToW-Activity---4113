@@ -83,6 +83,7 @@ th[aria-sort=descending]::after{content:" ▼";font-size:9px}
 .name{font-weight:550;overflow-wrap:anywhere}
 .tag{display:inline-block;font-size:11px;color:var(--series-1);border:1px solid var(--series-1);border-radius:5px;padding:0 5px;margin-left:5px;font-weight:550}
 .tag.muted{color:var(--muted);border-color:var(--border);font-weight:450}
+.tag.legal{color:var(--good-text);border-color:var(--good-text)}
 .scroll{max-height:420px;overflow:auto}
 .scroll th{position:sticky;top:0;z-index:1}
 .empty{color:var(--muted);font-style:italic;padding:8px 0}
@@ -213,6 +214,8 @@ const store = { get(k){ try { return localStorage.getItem(k); } catch(e){ return
                 set(k,v){ try { localStorage.setItem(k,v); } catch(e){} } };
 
 const meta = DATA.meta, TOP_N = meta.top_n, WEEKS = DATA.weeks, COLS = DATA.cols;
+const LEGAL = new Set(meta.acceptes || []);   /* Governor IDs approved on the migration Discord */
+const legalTag = id => LEGAL.has(id) ? '<span class="tag legal" title="Approved on the 4113 Migration Discord">légal - Discord</span>' : '';
 const weekList = WEEKS.map(w => w.semaine);
 let wi = weekList.length - 1;
 let topMode = store.get('kd-top') === '1';
@@ -420,11 +423,13 @@ function moveTable(el, rows, countEl, emptyMsg, kind){
   if (rows == null) { el.innerHTML = '<div class="empty">Available from the next weekly export (needs a previous week to compare with).</div>'; countEl.textContent = ''; return; }
   const imp = k => { const s = sum(rows, k) * (kind || 1);
     return kind ? `<span class="${cls(s)}" title="${sign(s)}${fmtFull(s)}">${fmtD(s)}</span>` : `<span title="${fmtFull(s)}">${fmt(s)}</span>`; };
-  countEl.innerHTML = `(${rows.length})` + (rows.length ? `<span class="impact"> · ${imp('power')} power · ${imp('kp')} KP</span>` : '');
+  const nLegal = kind === 1 ? rows.filter(r => LEGAL.has(r.id)).length : 0;
+  countEl.innerHTML = `(${rows.length})` + (rows.length ? `<span class="impact"> · ${imp('power')} power · ${imp('kp')} KP</span>` : '')
+    + (nLegal ? ` · <span class="tag legal" style="margin-left:0">${nLegal} légal - Discord</span>` : '');
   if (!rows.length) { el.innerHTML = `<div class="empty">${emptyMsg}</div>`; return; }
   const sorted = rows.slice().sort((a, b) => b.power - a.power);
   el.innerHTML = `<div class="scroll"><table><thead><tr><th>Governor</th><th>ID</th><th class="num">CH</th><th class="num">Power</th><th class="num">KP</th></tr></thead><tbody>`
-    + sorted.map(r => `<tr><td><span class="name">${esc(r.pseudo)}</span>${r.returning ? '<span class="tag" title="Already seen in an earlier week">returning</span>' : ''}</td><td class="gid">${r.id}</td><td class="num">${r.ch ?? '–'}</td>`
+    + sorted.map(r => `<tr><td><span class="name">${esc(r.pseudo)}</span>${r.returning ? '<span class="tag" title="Already seen in an earlier week">returning</span>' : ''}${kind === 1 ? legalTag(r.id) : ''}</td><td class="gid">${r.id}</td><td class="num">${r.ch ?? '–'}</td>`
       + `<td class="num" title="${fmtFull(r.power)}">${fmt(r.power)}</td><td class="num" title="${fmtFull(r.kp)}">${fmt(r.kp)}</td></tr>`).join('')
     + '</tbody></table></div>';
 }

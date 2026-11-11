@@ -23,7 +23,16 @@ def _ts(v) -> str | None:
     return None if v is None or pd.isna(v) else pd.Timestamp(v).strftime("%Y-%m-%d %H:%M")
 
 
-def build_payload(df: pd.DataFrame, cfg: dict, log: list[str]) -> dict:
+def load_acceptes(path: Path, log: list[str]) -> list[int]:
+    """Governor IDs des migrants approuvés sur Discord (seuls les IDs sont publiés, jamais les pseudos Discord)."""
+    if not path.exists():
+        log.append(f"{path.name} not found: no 'légal - Discord' tags.")
+        return []
+    ids = pd.to_numeric(pd.read_csv(path, dtype=str, encoding="utf-8-sig")["governor_id"], errors="coerce").dropna()
+    return sorted({int(i) for i in ids})
+
+
+def build_payload(df: pd.DataFrame, cfg: dict, log: list[str], acceptes: list[int] | None = None) -> dict:
     """df : sortie de analyse.carry_forward (colonne pas_vu)."""
     weeks, data = [], {}
     for wk, g in df.groupby("semaine", sort=True):
@@ -45,6 +54,7 @@ def build_payload(df: pd.DataFrame, cfg: dict, log: list[str]) -> dict:
             "top_n": int(cfg.get("top_n", 400)),
             "genere_le": dt.datetime.now().strftime("%d/%m/%Y %H:%M"),
             "journal": log,
+            "acceptes": acceptes or [],
         },
         "cols": ROW_COLS,
         "weeks": weeks,

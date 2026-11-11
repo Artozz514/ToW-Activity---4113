@@ -8,6 +8,9 @@ royaume: 4113
 dossiers:
   exports: "data/kingdom/raw"   # déposer ici l'export CSV hebdo du royaume, sans le renommer
   sortie: "output/kingdom"      # dashboard.html, historique_royaume.csv, resume_royaume.csv
+  # migrants approuvés sur Discord (colonne governor_id) : tag « légal - Discord » dans les arrivées.
+  # Seuls les Governor IDs sont mis dans le dashboard, jamais les pseudos Discord.
+  migrants_acceptes: "data/kingdom/migrants_acceptes.csv"
 
 # Vue « Top N » : le toggle en haut de la page ne garde que les N plus gros
 # gouverneurs (classés par power) de chaque semaine, pour toutes les sections.

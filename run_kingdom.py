@@ -22,7 +22,7 @@ import yaml
 
 from rok_activity.publish import publish
 from rok_kingdom.analyse import carry_forward, weekly_summary
-from rok_kingdom.dashboard import build_payload, write_dashboard
+from rok_kingdom.dashboard import build_payload, load_acceptes, write_dashboard
 from rok_kingdom.ingest import load_snapshots
 
 ROOT = Path(__file__).resolve().parent
@@ -46,7 +46,8 @@ def main(config_path: str = "config_kingdom.yaml", publier: bool = True) -> None
 
     df.to_csv(out / "historique_royaume.csv", index=False, encoding="utf-8-sig")
     summary.to_csv(out / "resume_royaume.csv", index=False, encoding="utf-8-sig")
-    dash = write_dashboard(build_payload(df, cfg, log), out / "dashboard.html")
+    acceptes = load_acceptes(ROOT / cfg["dossiers"].get("migrants_acceptes", "data/kingdom/migrants_acceptes.csv"), log)
+    dash = write_dashboard(build_payload(df, cfg, log, acceptes), out / "dashboard.html")
 
     print("\n".join(log))
     last = summary["semaine"].max()

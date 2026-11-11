@@ -14,3 +14,7 @@ Thumbs.db
 
 # Réglages locaux Claude Code
 .claude/
+
+# Données Discord (pseudos et IDs Discord de tiers) : jamais publiées
+/data/kingdom/migrants_acceptes.csv
+/data/kingdom/tickets_gouverneurs.csv
