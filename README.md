@@ -92,9 +92,30 @@ templates/dashboard.html  gabarit du dashboard
 run_weekly.py          point d'entrée
 docs/index.html        dashboard publié (GitHub Pages)
 output/                fichiers générés
+config_kingdom.yaml · rok_kingdom/ · run_kingdom.py · templates/kingdom.html   dashboard royaume (voir plus bas)
 AUDIT_LEGACY.md        audit de l'ancien fichier Google Sheets
 outils/import_legacy.py  import ponctuel des semaines du fichier legacy
 ```
+
+## Dashboard royaume 4113 (indépendant)
+
+Second dashboard, à l'échelle du royaume entier : un CSV hebdo avec tous les gouverneurs.
+
+**Routine** : déposer le CSV de la semaine (`4113_governors_summary_activity_AAAAMMJJ_HHMMSS.csv`, sans le renommer) dans `data/kingdom/raw/`, puis double-cliquer sur `lancer_royaume.bat` (ou `python run_kingdom.py`). Le dashboard est publié sur https://artozz514.github.io/ToW-Activity---4113/kingdom/ (`--sans-publication` pour ne rien envoyer).
+
+**Contenu** : total power et total KP, tendances, hausse hebdo du power et des KP, nouveaux arrivants et départs (par Governor ID), top 5 des hausses de power et de KP (en brut), liste complète des gouverneurs (25 / 50 / 100 / 400 / tous). Le toggle **TOP 400 View** en haut de la page restreint *toutes* les sections aux 400 plus gros power de chaque semaine (`top_n` dans `config_kingdom.yaml`).
+
+**Rattachement aux semaines** : la semaine (lundi → dimanche) est lue dans le contenu du fichier (`From Date`), pas dans son nom : on peut déposer d'un coup plusieurs semaines exportées le même jour. Un export dont le suivi s'arrête avant le dimanche est une **semaine en cours** ; l'export complet du dimanche le remplace automatiquement (on garde celui qui couvre le plus loin). Les fichiers vides sont ignorés et signalés.
+
+**Semaine en cours** : l'outil ne liste que les gouverneurs déjà scannés depuis lundi. Ceux de la semaine précédente pas encore revus sont comptés à leur dernière valeur (« not seen yet ») au lieu d'être pris pour des départs ; les départs ne sont tranchés qu'avec l'export du dimanche. Les hausses et arrivées sont affichées, mais provisoires.
+
+**Méthode** :
+- hausse hebdo d'un total = total de la semaine − total de la semaine précédente (J-7), sur le même périmètre : arrivées et départs sont donc compris dedans ;
+- hausse d'un gouverneur = sa valeur − sa valeur de la semaine précédente (même ID) ; un nouvel arrivant n'en a pas ;
+- 1re semaine suivie (ou semaine précédente manquante) : on utilise à la place les deltas fournis par l'export (`Power Change`, `Kill Points Change`…), qui couvrent la période de suivi de l'outil (≈ 5 jours) ; le dashboard l'affiche dans un bandeau. Les arrivées et départs ne sont alors pas calculables ;
+- les colonnes `T4` / `T5` de l'export sont des **nombres d'unités tuées** (cumul) et non de la puissance de troupes : le dashboard affiche donc « T4 / T5 kills WoW ».
+
+**Fichiers** : `config_kingdom.yaml` (réglages), `rok_kingdom/` (code), `templates/kingdom.html` (gabarit), `run_kingdom.py` (point d'entrée), `output/kingdom/` (dashboard, `historique_royaume.csv`, `resume_royaume.csv`), `docs/kingdom/index.html` (version publiée).
 
 ## Historique importé du fichier legacy
 
@@ -109,4 +130,5 @@ Les semaines du 27/07 au 30/08/2026 viennent de l'ancien Google Sheet. Elles ont
 
 - [ ] Compléter les **rangs** dans `roster.csv` : 85 sont vides, et les 51 repris du legacy sont à vérifier.
 - [ ] Confirmer que tech, aides, forts et construction sont bien des **compteurs hebdomadaires** dans l'outil d'export (sinon passer en `mode: "cumul"`).
+- [ ] Royaume : ré-exporter les semaines du 28/09–04/10 et du 05/10–11/10 (fichiers reçus vides le 11/11/2026).
 - [ ] Module KvK (phase 2) : même pipeline, avec des KPI différents (kill points, deads, honneur), sur une fenêtre de dates KvK.

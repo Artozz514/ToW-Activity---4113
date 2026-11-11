@@ -11,3 +11,6 @@ __pycache__/
 ~$*
 .DS_Store
 Thumbs.db
+
+# Réglages locaux Claude Code
+.claude/

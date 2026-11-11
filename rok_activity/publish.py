@@ -24,7 +24,7 @@ def publish(root: Path, dashboard: Path, cfg: dict, message: str) -> str:
         return "Publication désactivée (config.yaml → publication.activer)."
 
     docs = root / pub.get("dossier", "docs")
-    docs.mkdir(exist_ok=True)
+    docs.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(dashboard, docs / "index.html")
     (docs / ".nojekyll").touch()  # GitHub sert le fichier tel quel, sans le retraiter
 
