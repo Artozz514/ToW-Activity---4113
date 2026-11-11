@@ -47,7 +47,8 @@ def main(config_path: str = "config_kingdom.yaml", publier: bool = True) -> None
     df.to_csv(out / "historique_royaume.csv", index=False, encoding="utf-8-sig")
     summary.to_csv(out / "resume_royaume.csv", index=False, encoding="utf-8-sig")
     acceptes = load_acceptes(ROOT / cfg["dossiers"].get("migrants_acceptes", "data/kingdom/migrants_acceptes.csv"), log)
-    dash = write_dashboard(build_payload(df, cfg, log, acceptes), out / "dashboard.html")
+    illegaux = load_acceptes(ROOT / cfg["dossiers"].get("migrants_illegaux", "data/kingdom/migrants_illegaux.csv"), log)
+    dash = write_dashboard(build_payload(df, cfg, log, acceptes, illegaux), out / "dashboard.html")
 
     print("\n".join(log))
     last = summary["semaine"].max()
