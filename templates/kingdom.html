@@ -87,6 +87,8 @@ th[aria-sort=descending]::after{content:" ▼";font-size:9px}
 .scroll th{position:sticky;top:0;z-index:1}
 .empty{color:var(--muted);font-style:italic;padding:8px 0}
 .count{font-size:12px;color:var(--ink-2);font-weight:400;margin-left:6px}
+.count .impact{font-weight:600;font-variant-numeric:tabular-nums}
+.count .impact span:not(.pos):not(.neg){color:var(--ink)}
 .banner{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--series-1);border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:13px;color:var(--ink-2)}
 .banner b{color:var(--ink)}
 .pager{display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
@@ -413,9 +415,12 @@ function topList(el, rows, k, lbl){
     + '</tbody></table>';
 }
 
-function moveTable(el, rows, countEl, emptyMsg){
+/* kind: +1 arrivals (gain), -1 departures (loss), 0 not seen yet (neutral, last week's values) */
+function moveTable(el, rows, countEl, emptyMsg, kind){
   if (rows == null) { el.innerHTML = '<div class="empty">Available from the next weekly export (needs a previous week to compare with).</div>'; countEl.textContent = ''; return; }
-  countEl.textContent = `(${rows.length})`;
+  const imp = k => { const s = sum(rows, k) * (kind || 1);
+    return kind ? `<span class="${cls(s)}" title="${sign(s)}${fmtFull(s)}">${fmtD(s)}</span>` : `<span title="${fmtFull(s)}">${fmt(s)}</span>`; };
+  countEl.innerHTML = `(${rows.length})` + (rows.length ? `<span class="impact"> · ${imp('power')} power · ${imp('kp')} KP</span>` : '');
   if (!rows.length) { el.innerHTML = `<div class="empty">${emptyMsg}</div>`; return; }
   const sorted = rows.slice().sort((a, b) => b.power - a.power);
   el.innerHTML = `<div class="scroll"><table><thead><tr><th>Governor</th><th>ID</th><th class="num">CH</th><th class="num">Power</th><th class="num">KP</th></tr></thead><tbody>`
@@ -484,15 +489,15 @@ function render(){
   renderScope(v); renderBanner(v); renderTiles(v); renderTrends(v);
   topList($('#topPow'), v.rows, 'powWow', 'Power gain');
   topList($('#topKp'), v.rows, 'kpWow', 'KP gain');
-  moveTable($('#arrivals'), v.arrivals, $('#nArr'), 'No new governor this week.');
+  moveTable($('#arrivals'), v.arrivals, $('#nArr'), 'No new governor this week.', 1);
   if (v.partial && v.arrivals) {
     $('#depTitle').firstChild.textContent = 'Not seen yet this week';
     $('#depHint').textContent = "Present last week, not scanned yet this week (week in progress). Not counted as departures: Sunday's full export will tell who really left.";
-    moveTable($('#departures'), v.notSeen, $('#nDep'), 'Everyone from last week has been seen already.');
+    moveTable($('#departures'), v.notSeen, $('#nDep'), 'Everyone from last week has been seen already.', 0);
   } else {
     $('#depTitle').firstChild.textContent = 'Recently left';
     $('#depHint').textContent = 'Governor IDs present last week but missing this week. Power and KP shown as of last week.';
-    moveTable($('#departures'), v.departures, $('#nDep'), 'Nobody left this week.');
+    moveTable($('#departures'), v.departures, $('#nDep'), 'Nobody left this week.', -1);
   }
   renderTable(); renderFooter();
 }
