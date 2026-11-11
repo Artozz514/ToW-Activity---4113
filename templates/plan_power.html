@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>4113 Power Reduction Plan</title>
+<style>
+:root{
+  color-scheme:light;
+  --page:#f9f9f7; --surface:#fcfcfb; --surface-2:#f3f2ee;
+  --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781;
+  --grid:#e1e0d9; --border:rgba(11,11,11,.10);
+  --series-1:#2a78d6; --series-2:#7a5af5; --series-3:#e08a1e;
+  --bad:#b02a2a; --good:#006300;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --page:#0d0d0d; --surface:#1a1a19; --surface-2:#232321;
+    --ink:#f0efec; --ink-2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --border:rgba(255,255,255,.10);
+    --series-1:#3987e5; --series-2:#9a82ff; --series-3:#f0a040;
+    --bad:#e66767; --good:#3dbd3d;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --page:#0d0d0d; --surface:#1a1a19; --surface-2:#232321;
+  --ink:#f0efec; --ink-2:#c3c2b7; --muted:#898781;
+  --grid:#2c2c2a; --border:rgba(255,255,255,.10);
+  --series-1:#3987e5; --series-2:#9a82ff; --series-3:#f0a040;
+  --bad:#e66767; --good:#3dbd3d;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1100px;margin:0 auto;padding:20px 16px 48px;display:flex;flex-direction:column;gap:18px}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;justify-content:space-between}
+h1{font-size:22px;margin:0;font-weight:650;letter-spacing:-.01em}
+h2{font-size:15px;margin:0 0 6px;font-weight:620}
+.sub{color:var(--ink-2);font-size:13px}
+.lead{margin:6px 0 0;color:var(--ink-2);max-width:72ch}
+.lead b{color:var(--ink);font-variant-numeric:tabular-nums}
+a.btn,button.btn{font:inherit;background:var(--surface);color:var(--ink-2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer;text-decoration:none;min-height:34px;display:inline-flex;align-items:center}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:12px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.card h3{margin:0;font-size:12px;color:var(--ink-2);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.big{font-size:28px;font-weight:650;font-variant-numeric:tabular-nums;color:var(--bad)}
+.card.goal{border-color:var(--ink)}
+.card.goal .big{color:var(--ink)}
+.small{font-size:12px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;min-width:0}
+.note{margin:6px 0 0;font-size:12px;color:var(--muted);max-width:75ch}
+.chart{position:relative;min-height:120px}
+.chart svg text{font-size:12px;fill:var(--ink-2)}
+.chart svg text.val{fill:var(--ink);font-variant-numeric:tabular-nums}
+.tip{position:absolute;pointer-events:none;background:var(--surface);border:1px solid var(--border);box-shadow:0 4px 14px rgba(0,0,0,.12);border-radius:8px;padding:6px 9px;font-size:12px;white-space:nowrap;z-index:2;display:none}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:16px}
+.tablewrap{overflow:auto;max-height:440px;border:1px solid var(--border);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:12.5px;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:6px 10px;border-bottom:1px solid var(--grid);white-space:nowrap}
+th{position:sticky;top:0;background:var(--surface);color:var(--ink-2);font-weight:600}
+.num{text-align:right}
+td.neg{color:var(--bad)}
+details summary{cursor:pointer;color:var(--ink-2);font-size:13px}
+details ul{margin:6px 0 0;padding-left:18px;font-size:12.5px;color:var(--ink-2);max-width:78ch}
+footer{color:var(--muted);font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Kingdom 4113 · Power reduction plan</h1>
+      <div class="sub" id="subtitle"></div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <a class="btn" href="../">← Kingdom overview</a>
+      <button class="btn" id="themeBtn" type="button" aria-label="Toggle theme">◐ Theme</button>
+    </div>
+  </header>
+
+  <p class="lead" id="lead"></p>
+
+  <section class="cards" aria-label="Levers">
+    <div class="card"><h3>1 · Illegals zeroed</h3><div class="big" id="v-ill"></div><div class="small" id="s-ill"></div></div>
+    <div class="card"><h3>2 · Forced migration (net)</h3><div class="big" id="v-mig"></div><div class="small" id="s-mig"></div></div>
+    <div class="card"><h3>3 · Seats removed</h3><div class="big" id="v-seat"></div><div class="small" id="s-seat"></div></div>
+    <div class="card goal"><h3>4 · Total goal</h3><div class="big" id="v-total"></div><div class="small" id="s-total"></div></div>
+  </section>
+
+  <section class="panel">
+    <h2>Top 400 power reduction by lever</h2>
+    <div class="chart" id="chLevers"></div>
+    <p class="note">Spots freed by departing governors are taken by the next ones in the ranking, so forced migration only counts the power that leaves minus the power that comes in.</p>
+  </section>
+
+  <section class="panel">
+    <h2>Forced migration: power leaving, by alliance</h2>
+    <div class="chart" id="chAlliances"></div>
+    <p class="note" id="migNote"></p>
+  </section>
+
+  <div class="two">
+    <section class="panel">
+      <h2>Forced migration list <span class="small" id="nMig"></span></h2>
+      <div class="tablewrap"><table><thead><tr><th>Governor</th><th>ID</th><th>Alliance</th><th class="num">Power</th><th class="num">KP</th></tr></thead><tbody id="tMig"></tbody></table></div>
+    </section>
+    <section class="panel">
+      <h2>Illegals list <span class="small" id="nIll"></span></h2>
+      <div class="tablewrap"><table><thead><tr><th>Governor</th><th>ID</th><th>Alliance</th><th class="num">Power</th><th class="num">Cut</th></tr></thead><tbody id="tIll"></tbody></table></div>
+    </section>
+  </div>
+
+  <details>
+    <summary>How the numbers are computed</summary>
+    <ul id="hyp"></ul>
+  </details>
+  <footer id="footer"></footer>
+</div>
+<div class="tip" id="tip"></div>
+
+<script>
+const DATA = /*__DATA__*/null;
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const P = DATA.params;   // PER_ILLEGAL, SEAT_POWER, SEATS, MIN_POWER, MAX_KP, SPARED_ALLIANCE
+const fmtP = v => { const a = Math.abs(v); return a >= 1e9 ? (v/1e9).toFixed(2) + 'B' : a >= 1e6 ? (v/1e6).toFixed(1) + 'M' : Math.round(v/1e3) + 'K'; };
+const neg = v => '−' + fmtP(v), plus = v => '+' + fmtP(v);
+const pct = v => (v * 100).toFixed(1) + '%';
+
+/* theme */
+(() => { let s = null; try { s = localStorage.getItem('kd-theme'); } catch (e) {}
+  if (s) document.documentElement.dataset.theme = s;
+  $('#themeBtn').onclick = () => { const dark = getComputedStyle(document.documentElement).colorScheme === 'dark';
+    const n = dark ? 'light' : 'dark'; document.documentElement.dataset.theme = n; try { localStorage.setItem('kd-theme', n); } catch (e) {} }; })();
+
+/* ---- computation (same rules as the analysis) ---- */
+const G = DATA.rows.map(r => Object.fromEntries(DATA.cols.map((c, i) => [c, r[i]])));
+const byPower = f => (a, b) => f(b) - f(a);
+const topN = (rows, f) => rows.slice().sort(byPower(f)).slice(0, P.SEATS);
+const sum = (rows, f) => rows.reduce((s, r) => s + f(r), 0);
+const pw = g => g.power, pwIll = g => g.power - (g.illegal ? P.PER_ILLEGAL : 0);
+const topBefore = topN(G, pw), before = sum(topBefore, pw), inBefore = new Set(topBefore.map(g => g.id));
+const leaving = G.filter(g => g.forced), staying = G.filter(g => !g.forced);
+const topAfterMig = topN(staying, pw);
+const entering = topAfterMig.filter(g => !inBefore.has(g.id));
+const migNet = before - sum(topAfterMig, pw);
+const migOut = sum(leaving.filter(g => inBefore.has(g.id)), pw), migIn = sum(entering, pw);
+const illCut = sum(topAfterMig, pw) - sum(topN(staying, pwIll), pwIll);
+const illInTop = topAfterMig.filter(g => g.illegal).length;
+const seatCut = P.SEATS * P.SEAT_POWER;
+const total = migNet + illCut + seatCut, after = before - total;
+const kept = G.filter(g => g.criteria && !g.forced).length;
+const illegals = G.filter(g => g.illegal).sort(byPower(pw));
+
+/* ---- text ---- */
+$('#subtitle').textContent = `Data: ${DATA.meta.source} · generated ${DATA.meta.generated}`;
+$('#lead').innerHTML = `The three levers would cut <b>${fmtP(total)}</b> from the total power of the top 400, i.e. <b>${pct(total / before)}</b>: from <b>${fmtP(before)}</b> to <b>${fmtP(after)}</b>.`;
+$('#v-ill').textContent = neg(illCut);
+$('#s-ill').textContent = `${illInTop} illegals in the top 400 × ${fmtP(P.PER_ILLEGAL)}`;
+$('#v-mig').textContent = neg(migNet);
+$('#s-mig').textContent = `${leaving.length} leaving (outside ${P.SPARED_ALLIANCE}): ${neg(migOut)} out, ${plus(migIn)} in`;
+$('#v-seat').textContent = neg(seatCut);
+$('#s-seat').textContent = `${P.SEATS} of the top 400 × ${fmtP(P.SEAT_POWER)}`;
+$('#v-total').textContent = neg(total);
+$('#s-total').textContent = `${pct(total / before)} of the top 400 total power`;
+$('#migNote').textContent = `Governors above ${fmtP(P.MIN_POWER)} power with less than ${fmtP(P.MAX_KP)} KP, in the kingdom for more than 2 weeks (present since ${DATA.meta.cutoff} or earlier). The ${kept} ${P.SPARED_ALLIANCE} members who meet the same criteria stay.`;
+$('#hyp').innerHTML = [
+  'Everything is measured on the total power of the top 400, not the whole kingdom.',
+  `Illegals: flat ${fmtP(P.PER_ILLEGAL)} power lost per illegal; only those in the top 400 lower its total (one dropping below rank 400 is replaced by the next governor).`,
+  `Forced migration: the governor leaves the kingdom and the next ones in the ranking take the spot. The cut is the power leaving minus the power coming in. ${P.SPARED_ALLIANCE} members do not leave.`,
+  `Seats: ${fmtP(P.SEAT_POWER)} power removed from each of the ${P.SEATS} first governors (after departures), i.e. ${fmtP(seatCut)}.`,
+  'Order applied: departures, then illegals, then seats.',
+].map(s => `<li>${esc(s)}</li>`).join('');
+$('#footer').textContent = `Sources: ${DATA.meta.source}; illegal list maintained by the 4113 leadership; arrival dates from the weekly kingdom exports.`;
+
+/* ---- bar charts ---- */
+const tip = $('#tip');
+function bars(el, rows, o) {
+  el.innerHTML = '';
+  const W = Math.max(el.clientWidth, 260), rh = 34, H = rows.length * rh + 6, NS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg'); svg.setAttribute('width', '100%'); svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.setAttribute('role', 'img'); svg.setAttribute('aria-label', o.aria); el.appendChild(svg);
+  const mk = (tag, attrs, text) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; svg.appendChild(e); return e; };
+  const labels = rows.map((r, i) => mk('text', { x: 0, y: i * rh + rh / 2 + 4 }, o.label(r)));
+  const lw = Math.max(...labels.map(t => t.getComputedTextLength())) + 10;
+  const probe = mk('text', { class: 'val' }, o.value(rows[0])); const vw = probe.getComputedTextLength() + 14; probe.remove();
+  const max = Math.max(...rows.map(o.v)), span = Math.max(40, W - lw - vw);
+  rows.forEach((r, i) => {
+    const w = Math.max(2, o.v(r) / max * span);
+    const rect = mk('rect', { x: lw, y: i * rh + 7, width: w, height: rh - 14, rx: 3, fill: o.color(r, i) });
+    rect.addEventListener('mousemove', ev => { tip.textContent = o.tip(r); tip.style.display = 'block';
+      tip.style.left = Math.min(ev.pageX + 12, window.scrollX + document.documentElement.clientWidth - tip.offsetWidth - 8) + 'px'; tip.style.top = (ev.pageY - 36) + 'px'; });
+    rect.addEventListener('mouseleave', () => tip.style.display = 'none');
+    mk('text', { class: 'val', x: lw + w + 6, y: i * rh + rh / 2 + 4 }, o.value(r));
+  });
+}
+const levers = [
+  { label: 'Illegals zeroed', v: illCut, n: illInTop }, { label: 'Forced migration (net)', v: migNet, n: leaving.length },
+  { label: 'Seats removed', v: seatCut, n: P.SEATS }];
+const byAll = Object.values(leaving.reduce((m, g) => { const k = g.alliance; (m[k] = m[k] || { alliance: k, n: 0, p: 0 }); m[k].n++; m[k].p += g.power; return m; }, {})).sort((a, b) => b.p - a.p);
+const cols = ['var(--series-1)', 'var(--series-2)', 'var(--series-3)'];
+function draw() {
+  bars($('#chLevers'), levers, { aria: 'Top 400 power cut by lever', label: r => r.label, v: r => r.v, value: r => neg(r.v),
+    tip: r => `${r.label}: ${neg(r.v)} (${r.n} governors)`, color: (r, i) => cols[i] });
+  bars($('#chAlliances'), byAll, { aria: 'Power leaving with forced migration, by alliance', label: r => `${r.alliance} (${r.n})`, v: r => r.p,
+    value: r => neg(r.p), tip: r => `${r.alliance}: ${r.n} leaving, ${neg(r.p)}`, color: () => cols[0] });
+}
+draw(); let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(draw, 150); });
+
+/* ---- tables ---- */
+const row = cells => '<tr>' + cells.map(([v, c]) => `<td${c ? ` class="${c}"` : ''}>${esc(v)}</td>`).join('') + '</tr>';
+$('#tMig').innerHTML = leaving.slice().sort(byPower(pw)).map(g => row([[g.name], [g.id], [g.alliance], [fmtP(g.power), 'num'], [fmtP(g.kp), 'num']])).join('');
+$('#tIll').innerHTML = illegals.map(g => row([[g.name], [g.id], [g.alliance], [fmtP(g.power), 'num'], [neg(P.PER_ILLEGAL), 'num neg']])).join('');
+$('#nMig').textContent = `(${leaving.length})`; $('#nIll').textContent = `(${illegals.length})`;
+</script>
+</body>
+</html>
