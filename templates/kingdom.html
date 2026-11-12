@@ -229,10 +229,12 @@ const weekRange = s => {
   const d = x => x.getUTCDate(), mo = x => MONTHS[x.getUTCMonth()];
   return (mo(start) === mo(end) ? `${d(start)}` : `${d(start)} ${mo(start)}`) + ` – ${d(end)} ${mo(end)} ${end.getUTCFullYear()}`;
 };
+const notSeenLbl = () => WEEKS[wi].partielle ? 'not seen yet' : 'not in snapshot';
 const weekName = i => `Week ${weekRange(weekList[i])}${WEEKS[i].partielle ? ' (in progress)' : ''}`;
 
 /* rows of each week, sorted by power (desc), with kingdom rank.
-   pas_vu = governor not scanned yet in a week in progress, carried at last week's values */
+   pas_vu = governor seen last week but absent from this week's file (week in progress or
+   end-of-week snapshot), carried at last known values */
 const ROWS = weekList.map(k => DATA.data[k].map((r, i) => {
   const o = Object.fromEntries(COLS.map((c, j) => [c, r[j]])); o.rank = i + 1; o.notSeen = !!o.pas_vu; return o;
 }));
@@ -254,7 +256,7 @@ function view(i){
   const prevAll = p >= 0 ? new Map(ROWS[p].map(r => [r.id, r])) : null;
   const rows = cur.map(r => {
     const o = {...r};
-    if (r.notSeen) {       // week in progress: not scanned yet, no WoW
+    if (r.notSeen) {       // not in this week's file: last known values, no WoW
       o.isNew = false; o.powWow = o.kpWow = o.t4Wow = o.t5Wow = null;
     } else if (prevAll) {
       const q = prevAll.get(r.id);
@@ -270,7 +272,7 @@ function view(i){
     }
     return o;
   });
-  const v = { i, p, rows, method: p >= 0 ? 'wow' : 'export', partial: WEEKS[i].partielle,
+  const v = { i, p, rows, method: p >= 0 ? 'wow' : 'export', partial: WEEKS[i].partielle, snapshot: !!WEEKS[i].instantane,
     power: sum(cur, 'power'), kp: sum(cur, 'kp'), notSeen: rows.filter(r => r.notSeen) };
   if (p >= 0) {
     const prevU = universe(p), curIds = new Set(ROWS[i].map(r => r.id));
@@ -376,8 +378,13 @@ function renderBanner(v){
   if (v.partial) {
     b.innerHTML = `<b>Week in progress</b> (data up to ${fmtDate(w.suivi_fin)}). Only governors already scanned this week have fresh figures. `
       + `The ${nf.format(v.notSeen.length)} governor(s) from last week not seen yet are counted at last week's values and listed as “not seen yet” instead of departures. `
-      + `Arrivals and increases are provisional; Sunday's full export will replace this one.`
+      + `Arrivals and increases are provisional; the end-of-week snapshot will replace this one.`
       + (v.method === 'export' ? ' No previous week to compare with: increases use the export deltas.' : '');
+    b.hidden = false;
+  } else if (v.snapshot && v.notSeen.length) {
+    b.innerHTML = `<b>End-of-week snapshot</b> (data of ${fmtDate(w.suivi_fin)}). It only lists governors scanned that day: `
+      + `the ${nf.format(v.notSeen.length)} governor(s) seen last week but missing from it are kept at their last known values (tagged “${notSeenLbl()}”). `
+      + `A governor missing from two snapshots in a row is counted as a departure.`;
     b.hidden = false;
   } else if (v.method === 'export') {
     const why = wi === 0 ? 'This is the first tracked week' : 'The previous week was not tracked';
@@ -392,7 +399,8 @@ function renderTiles(v){
   const wowLbl = v.method === 'wow' ? 'vs last week' : 'from export deltas';
   const tile = (lbl, val, delta, title) => `<div class="tile"${title?` title="${esc(title)}"`:''}><div class="lbl">${lbl}</div><div class="val">${val}</div><div class="delta">${delta}</div></div>`;
   const mv = !v.arrivals ? 'arrivals / departures from next week'
-    : `<span class="pos">+${v.arrivals.length} arrived</span> · ` + (v.partial ? `${v.notSeen.length} not seen yet` : `<span class="neg">−${v.departures.length} left</span>`);
+    : `<span class="pos">+${v.arrivals.length} arrived</span> · ` + (v.partial ? `${v.notSeen.length} not seen yet`
+      : `<span class="neg">−${v.departures.length} left</span>` + (v.notSeen.length ? ` · ${v.notSeen.length} ${notSeenLbl()}` : ''));
   $('#tiles').innerHTML = [
     tile('Total power', fmt(v.power), `${fmtFull(v.power)}`),
     tile('Total kill points', fmt(v.kp), `${fmtFull(v.kp)}`),
@@ -443,7 +451,7 @@ function moveTable(el, rows, countEl, emptyMsg, kind){
 /* ---------- full table ---------- */
 const TCOLS = [
   {k:'rank', l:'#', num:true, cell:r => `<td class="rk">${r.rank}</td>`},
-  {k:'pseudo', l:'Governor', cell:r => `<td><span class="name">${esc(r.pseudo)}</span>${r.isNew ? `<span class="tag">${r.returning ? 'returning' : 'new'}</span>` : ''}${r.notSeen ? '<span class="tag muted" title="Not scanned yet this week: last week\'s values">not seen yet</span>' : ''}${illegalTag(r.id)}</td>`},
+  {k:'pseudo', l:'Governor', cell:r => `<td><span class="name">${esc(r.pseudo)}</span>${r.isNew ? `<span class="tag">${r.returning ? 'returning' : 'new'}</span>` : ''}${r.notSeen ? `<span class="tag muted" title="Not in this week's file: last known values">${notSeenLbl()}</span>` : ''}${illegalTag(r.id)}</td>`},
   {k:'id', l:'ID', num:true, cell:r => `<td class="gid num">${r.id}</td>`},
   {k:'power', l:'Power', num:true, cell:r => `<td class="num" title="${fmtFull(r.power)}">${fmt(r.power)}</td>`},
   {k:'powWow', l:'Power WoW', num:true, cell:r => `<td class="num">${deltaHTML(r.powWow)}</td>`},
@@ -489,7 +497,8 @@ function renderFooter(){
     <li><b>TOP ${TOP_N} View</b>: keeps the ${TOP_N} highest-power governors of each week. Totals and trends compare this week's top ${TOP_N} with last week's top ${TOP_N}; departures list governors who were in last week's top ${TOP_N} and left the kingdom.</li>
     <li><b>T4 / T5 kills WoW</b>: increase in the number of T4 / T5 enemy units killed (the export tracks kills by tier, not troop power).</li>
     <li>Comparisons are only made with the week right before. If a week is missing, the export's own deltas are used instead.</li>
-    <li><b>Week in progress</b>: governors from last week not scanned yet are kept at last week's values (tagged “not seen yet”) so totals do not drop artificially; departures are only decided with the full Sunday export.</li>
+    <li><b>Week in progress</b>: governors from last week not scanned yet are kept at last week's values (tagged “not seen yet”) so totals do not drop artificially; departures are only decided with the end-of-week snapshot.</li>
+    <li><b>End-of-week snapshot</b>: from mid-November 2026 each week is a snapshot of its last day (everyone's figures at the same moment, no lag). It only lists governors scanned that day: those seen the week before but missing are kept at their last known values (tagged “not in snapshot”), and a governor missing from two snapshots in a row counts as a departure.</li>
     <li><span class="tag">returning</span>: an arrival already seen in an earlier week (left, then came back).</li>
     <li>Source file for this week: ${esc(w.fichier)}.</li>
   </ul></details>`;
@@ -508,6 +517,8 @@ function render(){
   } else {
     $('#depTitle').firstChild.textContent = 'Recently left';
     $('#depHint').textContent = 'Governor IDs present last week but missing this week. Power and KP shown as of last week.';
+    if (v.snapshot && v.notSeen.length) $('#depHint').textContent = 'Missing from two snapshots in a row. Power and KP shown as last known. '
+      + `${nf.format(v.notSeen.length)} other governor(s) were only missing from this snapshot: kept at last known values (tagged “not in snapshot” in the full list).`;
     moveTable($('#departures'), v.departures, $('#nDep'), 'Nobody left this week.', -1);
   }
   renderTable(); renderFooter();

@@ -101,13 +101,15 @@ outils/import_legacy.py  import ponctuel des semaines du fichier legacy
 
 Second dashboard, à l'échelle du royaume entier : un CSV hebdo avec tous les gouverneurs.
 
-**Routine** : déposer le CSV de la semaine (`4113_governors_summary_activity_AAAAMMJJ_HHMMSS.csv`, sans le renommer) dans `data/kingdom/raw/`, puis double-cliquer sur `lancer_royaume.bat` (ou `python run_kingdom.py`). Le dashboard est publié sur https://artozz514.github.io/ToW-Activity---4113/kingdom/ (`--sans-publication` pour ne rien envoyer).
+**Routine** : depuis mi-novembre 2026, déposer chaque fin de semaine un **snapshot du dernier jour** (période d'un jour, pas des 7 derniers jours : tout le monde est mesuré au même moment, sans décalage) au format `4113_governors_summary_activity_AAAAMMJJ_HHMMSS.csv`, sans le renommer, dans `data/kingdom/raw/`, puis double-cliquer sur `lancer_royaume.bat` (ou `python run_kingdom.py`). Le dashboard est publié sur https://artozz514.github.io/ToW-Activity---4113/kingdom/ (`--sans-publication` pour ne rien envoyer).
 
 **Contenu** : total power et total KP, tendances, hausse hebdo du power et des KP, nouveaux arrivants et départs (par Governor ID), top 5 des hausses de power et de KP (en brut), liste complète des gouverneurs (25 / 50 / 100 / 400 / tous). Le toggle **TOP 400 View** en haut de la page restreint *toutes* les sections aux 400 plus gros power de chaque semaine (`top_n` dans `config_kingdom.yaml`).
 
-**Rattachement aux semaines** : la semaine (lundi → dimanche) est lue dans le contenu du fichier (`From Date`), pas dans son nom : on peut déposer d'un coup plusieurs semaines exportées le même jour. Un export dont le suivi s'arrête avant le dimanche est une **semaine en cours** ; l'export complet du dimanche le remplace automatiquement (on garde celui qui couvre le plus loin). Les fichiers vides sont ignorés et signalés.
+**Rattachement aux semaines** : la semaine (lundi → dimanche) est lue dans le contenu du fichier (`From Date`), pas dans son nom : on peut déposer d'un coup plusieurs semaines exportées le même jour. Un export dont le suivi s'arrête avant le dimanche est une **semaine en cours**. Plusieurs fichiers de la même semaine sont fusionnés : pour chaque gouverneur, on garde la ligne du fichier qui couvre le plus loin (le snapshot de fin de semaine l'emporte donc sur un export pris en cours de semaine). Les fichiers vides sont ignorés et signalés.
 
-**Semaine en cours** : l'outil ne liste que les gouverneurs déjà scannés depuis lundi. Ceux de la semaine précédente pas encore revus sont comptés à leur dernière valeur (« not seen yet ») au lieu d'être pris pour des départs ; les départs ne sont tranchés qu'avec l'export du dimanche. Les hausses et arrivées sont affichées, mais provisoires.
+**Snapshot de fin de semaine** : un fichier couvrant moins de 4 jours ne liste que les gouverneurs scannés sur cette période. Ceux vus la semaine précédente mais absents sont reportés à leur dernière valeur (« not in snapshot ») ; un gouverneur absent de **deux snapshots de suite** compte comme un départ.
+
+**Semaine en cours** : l'outil ne liste que les gouverneurs déjà scannés depuis lundi. Ceux de la semaine précédente pas encore revus sont comptés à leur dernière valeur (« not seen yet ») au lieu d'être pris pour des départs ; les départs ne sont tranchés qu'avec le snapshot de fin de semaine. Les hausses et arrivées sont affichées, mais provisoires.
 
 **Méthode** :
 - hausse hebdo d'un total = total de la semaine − total de la semaine précédente (J-7), sur le même périmètre : arrivées et départs sont donc compris dedans ;

@@ -9,10 +9,12 @@ Méthode « semaine sur semaine » (WoW) :
 - 1re semaine suivie (ou semaine précédente manquante) : on retombe sur les deltas
   fournis par l'export (Power Change, Kill Points Change…), signalés comme tels.
 
-Semaine en cours (export pris avant le dimanche) : l'outil ne liste que les gouverneurs
-déjà scannés depuis lundi. Ceux de la semaine précédente pas encore revus sont reportés
-à leur dernière valeur connue (colonne pas_vu = True) au lieu d'être comptés comme
-départs ; les vrais départs ne sont tranchés qu'avec l'export complet du dimanche.
+Semaine en cours (export pris avant le dimanche) ou semaine fournie par un instantané
+(snapshot du dernier jour) : le fichier ne liste que les gouverneurs scannés sur sa
+période. Ceux vus la semaine précédente mais absents sont reportés à leur dernière valeur
+connue (colonne pas_vu = True) au lieu d'être comptés comme départs. Un gouverneur déjà
+reporté qui manque encore la semaine suivante n'est plus reporté : c'est un départ
+(absent de deux instantanés de suite).
 
 Le dashboard refait les calculs WoW dans la page (pour basculer Tous / Top N) ; ce module
 sert au résumé console, au fichier resume_royaume.csv, et de contrôle croisé.
@@ -31,17 +33,19 @@ def previous_week(weeks: list, i: int):
 
 
 def carry_forward(df: pd.DataFrame) -> pd.DataFrame:
-    """Ajoute aux semaines en cours les gouverneurs de D-7 pas encore revus (pas_vu=True)."""
+    """Ajoute aux semaines en cours / instantanés les gouverneurs VUS en D-7 et absents (pas_vu=True)."""
     df = df.assign(pas_vu=False)
     weeks = sorted(df["semaine"].unique())
     extra = []
     for i, wk in enumerate(weeks):
         cur = df[df["semaine"] == wk]
         prev_wk = previous_week(weeks, i)
-        if not cur["semaine_partielle"].iloc[0] or prev_wk is None:
+        partiel = cur["semaine_partielle"].iloc[0] or cur.get("instantane", pd.Series([False])).iloc[0]
+        if not partiel or prev_wk is None:
             continue
         prev = df[(df["semaine"] == prev_wk) & ~df["id"].isin(cur["id"])].copy()
-        keep = {c: cur[c].iloc[0] for c in ("semaine", "suivi_debut", "suivi_fin", "semaine_partielle", "fichier")}
+        keep = {c: cur[c].iloc[0] for c in ("semaine", "suivi_debut", "suivi_fin", "semaine_partielle", "instantane", "fichier")
+                if c in cur}
         prev = prev.assign(**keep, pas_vu=True,
                            power_change=pd.NA, kp_change=pd.NA, t4_change=pd.NA, t5_change=pd.NA, periode_minutes=pd.NA)
         extra.append(prev)

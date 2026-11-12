@@ -46,6 +46,7 @@ def build_payload(df: pd.DataFrame, cfg: dict, log: list[str], acceptes: list[in
             "suivi_debut": _ts(g["suivi_debut"].iloc[0]),
             "suivi_fin": _ts(g["suivi_fin"].iloc[0]),
             "partielle": bool(g["semaine_partielle"].iloc[0]),
+            "instantane": bool(g["instantane"].iloc[0]) if "instantane" in g else False,
             "fichier": g["fichier"].iloc[0],
             "periode_jours": round(float(per.median()) / 1440, 1) if per.notna().any() else None,
         })
