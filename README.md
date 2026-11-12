@@ -105,11 +105,11 @@ Second dashboard, à l'échelle du royaume entier : un CSV hebdo avec tous les g
 
 **Contenu** : total power et total KP, tendances, hausse hebdo du power et des KP, nouveaux arrivants et départs (par Governor ID), top 5 des hausses de power et de KP (en brut), liste complète des gouverneurs (25 / 50 / 100 / 400 / tous). Le toggle **TOP 400 View** en haut de la page restreint *toutes* les sections aux 400 plus gros power de chaque semaine (`top_n` dans `config_kingdom.yaml`).
 
-**Rattachement aux semaines** : la semaine (lundi → dimanche) est lue dans le contenu du fichier (`From Date`), pas dans son nom : on peut déposer d'un coup plusieurs semaines exportées le même jour. Un export dont le suivi s'arrête avant le dimanche est une **semaine en cours**. Plusieurs fichiers de la même semaine sont fusionnés : pour chaque gouverneur, on garde la ligne du fichier qui couvre le plus loin (le snapshot de fin de semaine l'emporte donc sur un export pris en cours de semaine). Les fichiers vides sont ignorés et signalés.
+**Rattachement aux semaines** : la semaine (lundi → dimanche) est lue dans le contenu du fichier (`From Date`), pas dans son nom. Plusieurs fichiers pour la même semaine : on garde celui qui couvre le plus loin (le snapshot le plus récent remplace les précédents). Les fichiers vides sont ignorés et signalés.
 
-**Snapshot de fin de semaine** : un fichier couvrant moins de 4 jours ne liste que les gouverneurs scannés sur cette période. Ceux vus la semaine précédente mais absents sont reportés à leur dernière valeur (« not in snapshot ») ; un gouverneur absent de **deux snapshots de suite** compte comme un départ.
+**Snapshot = liste de référence** : un fichier couvrant moins de 4 jours est un snapshot du royaume. Tout gouverneur absent du snapshot est compté comme **parti** et sort des totaux de power et de KP (règle validée par Arthur le 12/11/2026). Un snapshot pris avant le dimanche garde le label « semaine en cours » ; celui de fin de semaine le remplace.
 
-**Semaine en cours** : l'outil ne liste que les gouverneurs déjà scannés depuis lundi. Ceux de la semaine précédente pas encore revus sont comptés à leur dernière valeur (« not seen yet ») au lieu d'être pris pour des départs ; les départs ne sont tranchés qu'avec le snapshot de fin de semaine. Les hausses et arrivées sont affichées, mais provisoires.
+**Ancien export « depuis lundi »** (avant les snapshots) : les gouverneurs de la semaine précédente pas encore revus étaient reportés à leur dernière valeur (« not seen yet ») au lieu d'être comptés comme départs.
 
 **Méthode** :
 - hausse hebdo d'un total = total de la semaine − total de la semaine précédente (J-7), sur le même périmètre : arrivées et départs sont donc compris dedans ;

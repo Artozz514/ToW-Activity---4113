@@ -9,12 +9,11 @@ Méthode « semaine sur semaine » (WoW) :
 - 1re semaine suivie (ou semaine précédente manquante) : on retombe sur les deltas
   fournis par l'export (Power Change, Kill Points Change…), signalés comme tels.
 
-Semaine en cours (export pris avant le dimanche) ou semaine fournie par un instantané
-(snapshot du dernier jour) : le fichier ne liste que les gouverneurs scannés sur sa
-période. Ceux vus la semaine précédente mais absents sont reportés à leur dernière valeur
-connue (colonne pas_vu = True) au lieu d'être comptés comme départs. Un gouverneur déjà
-reporté qui manque encore la semaine suivante n'est plus reporté : c'est un départ
-(absent de deux instantanés de suite).
+Semaine en cours fournie par un export « depuis lundi » : l'outil ne liste que les gouverneurs
+déjà scannés. Ceux de la semaine précédente pas encore revus sont reportés à leur dernière
+valeur connue (colonne pas_vu = True) au lieu d'être comptés comme départs.
+Instantané (snapshot du dernier jour, la règle depuis le 12/11/2026) : c'est la liste de
+référence du royaume, aucun report — tout gouverneur absent du snapshot est un départ.
 
 Le dashboard refait les calculs WoW dans la page (pour basculer Tous / Top N) ; ce module
 sert au résumé console, au fichier resume_royaume.csv, et de contrôle croisé.
@@ -33,15 +32,15 @@ def previous_week(weeks: list, i: int):
 
 
 def carry_forward(df: pd.DataFrame) -> pd.DataFrame:
-    """Ajoute aux semaines en cours / instantanés les gouverneurs VUS en D-7 et absents (pas_vu=True)."""
+    """Ajoute aux semaines en cours (hors instantané) les gouverneurs de D-7 pas encore revus (pas_vu=True)."""
     df = df.assign(pas_vu=False)
     weeks = sorted(df["semaine"].unique())
     extra = []
     for i, wk in enumerate(weeks):
         cur = df[df["semaine"] == wk]
         prev_wk = previous_week(weeks, i)
-        partiel = cur["semaine_partielle"].iloc[0] or cur.get("instantane", pd.Series([False])).iloc[0]
-        if not partiel or prev_wk is None:
+        instantane = bool(cur["instantane"].iloc[0]) if "instantane" in cur else False
+        if not cur["semaine_partielle"].iloc[0] or instantane or prev_wk is None:
             continue
         prev = df[(df["semaine"] == prev_wk) & ~df["id"].isin(cur["id"])].copy()
         keep = {c: cur[c].iloc[0] for c in ("semaine", "suivi_debut", "suivi_fin", "semaine_partielle", "instantane", "fichier")

@@ -6,11 +6,11 @@ Règles :
   son nom : on peut ainsi déposer d'un coup tout un historique exporté le même jour ;
   à défaut de dates, on prend celle du nom (…_AAAAMMJJ_HHMMSS.csv) ;
 - une semaine dont le suivi s'arrête avant le dimanche est marquée « en cours » ;
-- plusieurs fichiers pour la même semaine : ils sont fusionnés, et pour chaque gouverneur
-  on garde la ligne du fichier qui couvre le plus loin (puis le plus récemment exporté) ;
-- « instantané » : un fichier qui ne couvre que quelques jours (< 4) — typiquement le
-  snapshot du dernier jour de la semaine. Il ne contient que les gouverneurs scannés ce
-  jour-là : les absents ne sont pas des départs (voir analyse.carry_forward) ;
+- plusieurs fichiers pour la même semaine : on garde celui qui couvre le plus loin
+  (puis le plus récemment exporté) ; les autres sont ignorés ;
+- « instantané » : un fichier qui ne couvre que quelques jours (< 4) — le snapshot du
+  dernier jour fourni chaque fin de semaine. C'est la liste de référence du royaume :
+  un gouverneur absent du snapshot est parti (pas de report, voir analyse.carry_forward) ;
 - les fichiers vides sont ignorés (signalés dans le journal).
 Les fichiers bruts ne sont jamais modifiés ; tout est recalculé à chaque exécution.
 """
@@ -79,23 +79,20 @@ def load_snapshots(cfg: dict, root: Path) -> tuple[pd.DataFrame, list[str]]:
     frames = []
     for wk, items in sorted(per_week.items()):
         items.sort(key=lambda x: x[0])            # le fichier qui couvre le plus loin en dernier
-        parts = [_normalise(df, cols, p, log) for _, p, df, _, _ in items]
-        out = pd.concat(parts, ignore_index=True).drop_duplicates("id", keep="last")
-        _, last, _, l_debut, l_fin = items[-1]
-        debuts = [d for *_, d, _ in items if d is not None]
-        debut = min(debuts) if debuts else None
-        fin = max(f for *_, f in items if f is not None)
-        instantane = l_debut is not None and (l_fin - l_debut) < pd.Timedelta(days=SNAPSHOT_MAX_DAYS)
+        _, last, df, debut, fin = items[-1]
+        out = _normalise(df, cols, last, log)
+        for _, p, *_ in items[:-1]:
+            log.append(f"Week ending {wk}: {p.name} skipped (superseded by {last.name}).")
+        instantane = debut is not None and (fin - debut) < pd.Timedelta(days=SNAPSHOT_MAX_DAYS)
         partielle = fin is not None and fin.date() < wk
         out.insert(0, "semaine", pd.Timestamp(wk))
         out.insert(1, "suivi_debut", debut)
         out.insert(2, "suivi_fin", fin)
         out.insert(3, "semaine_partielle", partielle)
         out.insert(4, "instantane", instantane)
-        out.insert(5, "fichier", " + ".join(p.name for _, p, *_ in reversed(items)))
+        out.insert(5, "fichier", last.name)
         frames.append(out)
-        merged = f", merged with {len(items) - 1} earlier file(s) of the week" if len(items) > 1 else ""
-        log.append(f"Week ending {wk}: {last.name} ({len(out)} governors{merged}"
+        log.append(f"Week ending {wk}: {last.name} ({len(out)} governors"
                    f"{', snapshot' if instantane else ''}{', week in progress' if partielle else ''}).")
     if not frames:
         raise SystemExit("Aucun export exploitable (fichiers vides ?).")
