@@ -5,7 +5,8 @@ __pycache__/
 
 # Fichiers de travail à la racine (les exports officiels vivent dans data/raw/)
 /Alliance_*
-/Copie de ToW Activity Sheet*.xlsx
+# fichier source du legacy (Google Sheet exporté) : gardé en local, non versionné
+data/raw/legacy/Copie de ToW Activity Sheet*.xlsx
 
 # Fichiers temporaires Office / système
 ~$*
@@ -14,7 +15,3 @@ Thumbs.db
 
 # Réglages locaux Claude Code
 .claude/
-
-# Données Discord (pseudos et IDs Discord de tiers) : jamais publiées
-/data/kingdom/migrants_acceptes.csv
-/data/kingdom/tickets_gouverneurs.csv

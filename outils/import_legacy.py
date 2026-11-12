@@ -3,7 +3,7 @@
 Convertit chaque onglet hebdomadaire en un CSV au format de l'export actuel, déposé dans
 data/raw/legacy/. Le pipeline normal les lit ensuite comme n'importe quelle semaine.
 
-    python outils/import_legacy.py "Copie de ToW Activity Sheet 7_27-9_6.xlsx"
+    python outils/import_legacy.py "data/raw/legacy/Copie de ToW Activity Sheet 7_27-9_6.xlsx"
 
 Rapprochement des joueurs (toujours par ID, jamais par pseudo quand c'est possible) :
 - onglets avec colonne « # » : # -> Governor ID via l'onglet « ToW Confirmed Memberlist » ;
@@ -95,4 +95,4 @@ def main(path: str) -> None:
 
 
 if __name__ == "__main__":
-    main(sys.argv[1] if len(sys.argv) > 1 else str(ROOT / "Copie de ToW Activity Sheet 7_27-9_6.xlsx"))
+    main(sys.argv[1] if len(sys.argv) > 1 else str(ROOT / "data" / "raw" / "legacy" / "Copie de ToW Activity Sheet 7_27-9_6.xlsx"))
