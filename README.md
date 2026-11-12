@@ -111,6 +111,8 @@ Second dashboard, à l'échelle du royaume entier : un CSV hebdo avec tous les g
 
 **Ancien export « depuis lundi »** (avant les snapshots) : les gouverneurs de la semaine précédente pas encore revus étaient reportés à leur dernière valeur (« not seen yet ») au lieu d'être comptés comme départs.
 
+**Blacklist** : `data/kingdom/blacklist.csv`. Pour ajouter quelqu'un, une ligne avec `governor_id`, `raison` (en anglais, affichée telle quelle) et `date_ajout`. À chaque exécution, le pipeline complète le dernier pseudo, le dernier power, la date et **tous les anciens noms** vus pour cet ID dans les exports (`raw/` et `analytics/`). Ces noms restent dans le CSV même si les exports disparaissent. Le dashboard affiche la section « Blacklist » et un tag noir `blacklist` dans les listes.
+
 **Méthode** :
 - hausse hebdo d'un total = total de la semaine − total de la semaine précédente (J-7), sur le même périmètre : arrivées et départs sont donc compris dedans ;
 - hausse d'un gouverneur = sa valeur − sa valeur de la semaine précédente (même ID) ; un nouvel arrivant n'en a pas ;

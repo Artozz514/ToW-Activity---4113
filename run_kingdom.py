@@ -21,6 +21,7 @@ import pandas as pd
 import yaml
 
 from rok_activity.publish import publish
+from rok_kingdom.blacklist import update_blacklist
 from rok_kingdom.analyse import carry_forward, weekly_summary
 from rok_kingdom.dashboard import build_payload, load_acceptes, write_dashboard
 from rok_kingdom.ingest import load_snapshots
@@ -48,7 +49,8 @@ def main(config_path: str = "config_kingdom.yaml", publier: bool = True) -> None
     summary.to_csv(out / "resume_royaume.csv", index=False, encoding="utf-8-sig")
     acceptes = load_acceptes(ROOT / cfg["dossiers"].get("migrants_acceptes", "data/kingdom/migrants_acceptes.csv"), log)
     illegaux = load_acceptes(ROOT / cfg["dossiers"].get("migrants_illegaux", "data/kingdom/migrants_illegaux.csv"), log)
-    dash = write_dashboard(build_payload(df, cfg, log, acceptes, illegaux), out / "dashboard.html")
+    blacklist = update_blacklist(ROOT / cfg["dossiers"].get("blacklist", "data/kingdom/blacklist.csv"), ROOT, cfg, log)
+    dash = write_dashboard(build_payload(df, cfg, log, acceptes, illegaux, blacklist), out / "dashboard.html")
 
     print("\n".join(log))
     last = summary["semaine"].max()

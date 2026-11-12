@@ -34,7 +34,7 @@ def load_acceptes(path: Path, log: list[str]) -> list[int]:
 
 
 def build_payload(df: pd.DataFrame, cfg: dict, log: list[str], acceptes: list[int] | None = None,
-                  illegaux: list[int] | None = None) -> dict:
+                  illegaux: list[int] | None = None, blacklist: list[dict] | None = None) -> dict:
     """df : sortie de analyse.carry_forward (colonne pas_vu)."""
     weeks, data = [], {}
     for wk, g in df.groupby("semaine", sort=True):
@@ -59,6 +59,7 @@ def build_payload(df: pd.DataFrame, cfg: dict, log: list[str], acceptes: list[in
             "journal": log,
             "acceptes": acceptes or [],
             "illegaux": illegaux or [],
+            "blacklist": blacklist or [],
         },
         "cols": ROW_COLS,
         "weeks": weeks,

@@ -13,6 +13,9 @@ dossiers:
   migrants_acceptes: "data/kingdom/migrants_acceptes.csv"
   # migrants illégaux signalés (colonne governor_id) : tag « illégal », lié à l'ID (suit les changements de pseudo)
   migrants_illegaux: "data/kingdom/migrants_illegaux.csv"
+  # blacklist (governor_id, raison, date_ajout) : section « Blacklist » du dashboard ;
+  # nom, power et anciens noms sont complétés automatiquement à chaque exécution
+  blacklist: "data/kingdom/blacklist.csv"
 
 # Vue « Top N » : le toggle en haut de la page ne garde que les N plus gros
 # gouverneurs (classés par power) de chaque semaine, pour toutes les sections.
