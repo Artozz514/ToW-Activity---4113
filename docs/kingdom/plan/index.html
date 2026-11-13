@@ -199,7 +199,9 @@ $('#hyp').innerHTML = [
 ].map(s => `<li>${esc(s)}</li>`).join('');
 $('#footer').textContent = `Sources: ${DATA.meta.source}; illegal list (and zeroed status) maintained by the 4113 leadership; highest power seen from every kingdom export and scan; arrival dates from the weekly kingdom exports.`;
 $('#perIll').textContent = fmtP(P.PER_ILLEGAL);
-$('#illNote').textContent = `${nZero} of the ${illegals.length + gone.length} illegals are zeroed. Realized cut is measured on every illegal still in the kingdom, zeroed or not; ${gone.length} illegal${gone.length === 1 ? ' is' : 's are'} no longer in the latest snapshot.`;
+$('#illNote').textContent = `${nZero} of the ${illegals.length + gone.length} illegals are zeroed. Realized cut is measured on every illegal still in the kingdom, zeroed or not.`
+  + (illegals.some(g => g.manual) ? ` Missed by the scans, power reported by the leadership: ${illegals.filter(g => g.manual).map(g => g.name).join(', ')}.` : '')
+  + (gone.length ? ` ${gone.length} illegal${gone.length === 1 ? ' is' : 's are'} no longer in the latest snapshot.` : '');
 
 /* ---- bar charts ---- */
 const tip = $('#tip');
