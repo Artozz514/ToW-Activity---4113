@@ -20,6 +20,7 @@ import argparse
 import sys
 from pathlib import Path
 
+import pandas as pd
 import yaml
 
 from rok_activity.analyse import ALERTE, SURVEILLER, alliance_summary, compute, leadership_changes, movements, record_ranks, renames, sync_roster
@@ -34,6 +35,10 @@ def main(config_path: str = "config.yaml", publier: bool = True) -> None:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
     cfg = yaml.safe_load((ROOT / config_path).read_text(encoding="utf-8"))
+    wl_path = ROOT / cfg["dossiers"].get("whitelist", "")
+    if cfg["dossiers"].get("whitelist") and wl_path.is_file():
+        ids = pd.to_numeric(pd.read_csv(wl_path, dtype=str, encoding="utf-8-sig")["governor_id"], errors="coerce").dropna()
+        cfg["_whitelist"] = {int(i) for i in ids}
     out = ROOT / cfg["dossiers"]["sortie"]
     out.mkdir(exist_ok=True)
 
@@ -62,7 +67,6 @@ def main(config_path: str = "config.yaml", publier: bool = True) -> None:
     sheet = week[list(report_cols)].rename(columns=report_cols)
     rapport = out / f"report_{last:%Y-%m-%d}.xlsx"
     try:
-        import pandas as pd
         with pd.ExcelWriter(rapport) as xw:
             flags = sheet[sheet["Status"].isin([ALERTE, SURVEILLER])].copy()
             flags["Status"] = pd.Categorical(flags["Status"], [ALERTE, SURVEILLER])

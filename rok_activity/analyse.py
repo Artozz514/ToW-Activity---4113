@@ -194,6 +194,7 @@ def compute(df: pd.DataFrame, roster: pd.DataFrame, cfg: dict, ranks: pd.DataFra
     # exemptions
     exempt_until = pd.to_datetime(df["exempte_jusqu_au"], errors="coerce", dayfirst=True)
     df["exempte"] = df["rang"].isin(rules.get("rangs_exemptes", [])) | (exempt_until.notna() & (exempt_until >= df["semaine"]))
+    df["exempte"] |= df["governor_id"].isin(cfg.get("_whitelist", set()))      # whitelist : toujours protégé
 
     # statut + raisons
     statuts, raisons = [], []

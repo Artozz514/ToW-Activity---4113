@@ -11,6 +11,8 @@ dossiers:
   exports: "data/raw"        # déposer ici l'export hebdo (csv ou xlsx), sans le renommer
   sortie: "output"           # dashboard, historique, rapport Excel
   roster: "roster.csv"       # rangs / exemptions / notes, maintenu à la main
+  # whitelist commune avec le dossier royaume (IDs toujours protégés) ; ignorée si le fichier est absent
+  whitelist: "../Data Analysis 4113 Kd/data/listes/whitelist.csv"
 
 # Colonnes de l'export utilisées comme identifiants
 colonnes:
